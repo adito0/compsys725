@@ -18,14 +18,22 @@ class TCPServer {
 	
 	while(true) { 
 	    
+		System.out.println("server is running..."); 
         Socket connectionSocket = welcomeSocket.accept(); 
-	    
+	    System.out.println("incoming data..."); 
+		
 	    BufferedReader inFromClient = new BufferedReader(new InputStreamReader(connectionSocket.getInputStream())); 
 	    
 	    DataOutputStream  outToClient = new DataOutputStream(connectionSocket.getOutputStream()); 
 	    
 	    clientSentence = inFromClient.readLine(); 
-	    
+	    if (clientSentence.substring(0,4) == "user") {
+			System.out.println("heck..."); 
+		}
+		else
+		{
+			System.out.println(clientSentence.substring(0,4));
+		}
 	    capitalizedSentence = clientSentence.toUpperCase() + '\n'; 
 	    
 	    outToClient.writeBytes(capitalizedSentence); 
