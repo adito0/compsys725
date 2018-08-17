@@ -27,13 +27,16 @@ class TCPServer {
 	    DataOutputStream  outToClient = new DataOutputStream(connectionSocket.getOutputStream()); 
 	    
 	    clientSentence = inFromClient.readLine(); 
-	    if (clientSentence.substring(0,4) == "user") {
-			System.out.println("heck..."); 
-		}
-		else
-		{
-			System.out.println(clientSentence.substring(0,4));
-		}
+	   
+		String[] parts = clientSentence.split("\\[ ",2);
+		String cmd = parts[0];
+		String a = parts[1];
+		String[] kentuts = a.split("\\]",2);
+		String args = kentuts[0];
+		
+		System.out.println("cmd: " + cmd); 
+		System.out.println("args: " + args); 
+		
 	    capitalizedSentence = clientSentence.toUpperCase() + '\n'; 
 	    
 	    outToClient.writeBytes(capitalizedSentence); 
