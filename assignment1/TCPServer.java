@@ -8,38 +8,73 @@ import java.io.*;
 import java.net.*; 
 
 class TCPServer { 
-    
-    public static void main(String argv[]) throws Exception 
-    { 
-	String clientSentence; 
-	String capitalizedSentence; 
+ 
+	//variable declaration
+	public static String args;
+	public static String cmd;
+	public static String errorMessage = "unidentified error";
+	public static boolean loggedIn = false;
+	public static String errorCode = "!";	
 	
-	ServerSocket welcomeSocket = new ServerSocket(1024); 
-	
-	while(true) { 
-	    
-		System.out.println("server is running..."); 
-        Socket connectionSocket = welcomeSocket.accept(); 
-	    System.out.println("incoming data..."); 
-		
-	    BufferedReader inFromClient = new BufferedReader(new InputStreamReader(connectionSocket.getInputStream())); 
-	    
-	    DataOutputStream  outToClient = new DataOutputStream(connectionSocket.getOutputStream()); 
-	    
-	    clientSentence = inFromClient.readLine(); 
-	   
-		String[] parts = clientSentence.split("\\[ ",2);
-		String cmd = parts[0];
+	public void commandSplitter(String command) throws Exception {
+		String[] parts = command.split("\\[ ",2);
+		cmd = parts[0];
 		String a = parts[1];
 		String[] kentuts = a.split("\\]",2);
-		String args = kentuts[0];
+		args = kentuts[0];
+	}
+	
+	public void USER(String cmd) throws Exception {
 		
-		System.out.println("cmd: " + cmd); 
-		System.out.println("args: " + args); 
+		boolean checkCmdUser = cmd.equalsIgnoreCase("user");
+
+		if (checkCmdUser == true) {
+			if (loggedIn == false) {
+				if (args.equalsIgnoreCase("syammy")) {
+					errorCode = "+";
+					errorMessage = "login was succesful";
+					loggedIn = true;
+				} else {
+					errorCode = "-";
+					errorMessage = "user does not exist";
+				}
+			}
+			else {
+				errorCode = "!";
+				errorMessage = "user is already logged in";
+			}				
+		}	
 		
-	    capitalizedSentence = clientSentence.toUpperCase() + '\n'; 
-	    
-	    outToClient.writeBytes(capitalizedSentence); 
+	}
+	
+    public static void main(String argv[]) throws Exception {
+		
+		//create new instance of TCPServer
+		TCPServer server = new TCPServer();
+		
+		String command; 
+	
+		//setup of welcoming socket
+		ServerSocket welcomeSocket = new ServerSocket(1024); 
+
+		while(true) { 
+
+			System.out.println("server is running..."); 
+			Socket connectionSocket = welcomeSocket.accept(); 
+			System.out.println("incoming data..."); 
+
+			BufferedReader inFromClient = new BufferedReader(new InputStreamReader(connectionSocket.getInputStream())); 
+			DataOutputStream  outToClient = new DataOutputStream(connectionSocket.getOutputStream()); 
+			command = inFromClient.readLine(); 
+			
+			server.commandSplitter(command);
+			server.USER(cmd);
+
+
+			System.out.println("args: " + args);
+			System.out.println("errorCode: " + errorCode);
+
+			outToClient.writeBytes(errorCode); 
         } 
     } 
 } 
