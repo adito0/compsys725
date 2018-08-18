@@ -5,7 +5,13 @@
 
 import java.io.*; 
 import java.net.*; 
+import java.nio.file.*;
+import java.nio.file.attribute.*;
 import java.util.ArrayList;
+import java.util.StringTokenizer;
+import java.util.NoSuchElementException;
+import java.util.Date;
+import java.text.SimpleDateFormat;
 
 class serverTCP { 
  
@@ -35,6 +41,7 @@ class serverTCP {
 	public static BufferedReader inFromClient;
 	public static DataOutputStream outToClient;
 	
+	private File currentDirectory = FileSystems.getDefault().getPath("").toFile().getAbsoluteFile();
 	
 	public void acceptConnection() throws Exception {
 		System.out.println("server is running..."); 
@@ -219,28 +226,77 @@ class serverTCP {
 	
 	public void LIST() throws Exception {
 		System.out.println("LIST() called");
-	
-		if (args.equalsIgnoreCase("a")) {
-			fileType = "a";
-			errorMessage = "+ using Ascii mode";
-		} 
-		else if (args.equalsIgnoreCase("b")) {
-			fileType = "b";
-			errorMessage = "+using Binary mode";
-		} 
-		else if (args.equalsIgnoreCase("c")) {
-			fileType = "c";
-			errorMessage = "+using Continuous mode";
-		}
-		else if (args == "") {
-			fileType = "b";
-			errorMessage = "+using Binary mode";
-		}
-		else {
-			errorMessage = "-type not valid";
-		}
+		String outputList = "+\n./\n../\n";  // Current and parent directories
 		
-		outToClient.writeBytes(errorMessage + "\n");	
+		if (args.equalsIgnoreCase("f")) {
+			File path = currentDirectory;
+			StringTokenizer tokentizedSentence = new StringTokenizer(args);
+			tokentizedSentence.nextToken();
+
+			// No type in arguments
+			if (!tokentizedSentence.hasMoreTokens()) {
+				errorMessage = "-missing argument";
+			}
+
+			args = tokentizedSentence.nextToken().toUpperCase();
+			
+			try {
+				path = new File(currentDirectory.toString() + "/" + tokentizedSentence.nextToken());
+
+				// Requested directory doesn't exist
+				if (!path.isDirectory()) {
+					errorMessage = "-not a directory";
+				}
+			} catch (NoSuchElementException e) {
+				// missing second argument, i.e. current directory
+			}
+
+			// Dateformat for verbose print
+			SimpleDateFormat dateFormat = new SimpleDateFormat("dd/MM/yyyy kk:mm");
+
+			File files[] = path.listFiles();
+
+			// Go through each file in the directory
+			for (File f : files) {
+				String filename = f.getName();
+
+				// Append / to directories
+				if (f.isDirectory()) {
+					filename = filename.concat("/");
+				}
+
+				// Verbose, get information on the file
+				if (args.equalsIgnoreCase("V")) {
+					long modifiedTime = f.lastModified();
+					String modifiedDate = dateFormat.format(new Date(modifiedTime));
+					String size = String.valueOf(f.length());
+					String owner = "";
+
+					// Get file owner's name
+					try {
+						 FileOwnerAttributeView attr = Files.getFileAttributeView(f.toPath(), FileOwnerAttributeView.class);
+						 owner = attr.getOwner().getName();
+					} catch (IOException e) {	
+						e.printStackTrace();
+					}
+
+					// print structure:   filename   modified time    size    owner
+					outputList = outputList.concat(String.format("%-30s %-20s %10s %20s \r\n", filename, modifiedDate, size, owner));
+
+				// Non verbose, filename only
+				} else {
+					outputList = outputList.concat(String.format("%s \r\n", filename));
+				}
+			}
+
+			errorMessage = outputList;			
+			
+		}
+		else if (args.equalsIgnoreCase("v")) {
+			fileType = "b";
+		} 
+
+		outToClient.writeBytes("+" + errorMessage + "\n");	
 	}
 	
     public static void main(String argv[]) throws Exception {

@@ -10,6 +10,8 @@ class clientTCP {
    
 	public static String sentence; 
 	public static String errorMessage; 	
+	public static String listingStandard;
+	public static String directoryPath;
 	
 	public static boolean skipPassword = false;
 	
@@ -44,7 +46,6 @@ class clientTCP {
 			ACCT();
 		}
 		else if (errorMessage.charAt(0) == '!') {
-			System.out.println("u r logged in");
 			TYPE();
 		}
 		else if (errorMessage.charAt(0) == '-') {
@@ -107,31 +108,30 @@ class clientTCP {
 
 		
 		if (errorMessage.charAt(0) == '+') {
-		  	System.out.println("file type is valid");
 			LIST();
 		}
 		else if (errorMessage.charAt(0) == '-') {
-		  	System.out.println("file type is invalid");
 			TYPE();
 		}		
 	}	
 
 	public void LIST() throws Exception {
 		
+		System.out.println("listing standard (f - standard, v - verbose): ");
+		listingStandard = inFromUser.readLine();
 		System.out.println("directory path: ");
-		sentence = "LIST[ " + inFromUser.readLine() + "]"; 
+		directoryPath = inFromUser.readLine();		
+		sentence = "LIST[ " + listingStandard + directoryPath + "]"; 
 		outToServer.writeBytes(sentence + "\n"); 
 		errorMessage = inFromServer.readLine();
 		System.out.println("from server: " + errorMessage); 
 
 		
 		if (errorMessage.charAt(0) == '+') {
-		  	System.out.println("file type is valid");
-			LIST();
+			//CDIR();
 		}
 		else if (errorMessage.charAt(0) == '-') {
-		  	System.out.println("file type is invalid");
-			TYPE();
+			LIST();
 		}		
 	}		
 	
