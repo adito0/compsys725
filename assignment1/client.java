@@ -15,37 +15,63 @@ class clientTCP {
 	public static DataOutputStream outToServer;
 	public static BufferedReader inFromServer;
 	
-	public boolean USER() throws Exception {
-		
+	public void USER() throws Exception {
 		System.out.println("username: ");
 		sentence = "USER[ " + inFromUser.readLine() + "]"; 
-		outToServer.writeBytes(sentence + '\n'); 
-
-		errorMessage = inFromServer.readLine(); 
 		
-		if (errorMessage.indexOf(0) == '+') {
-			
-			return false;
+		try {
+			outToServer.writeBytes(sentence + "\n"); 
+		  	System.out.println("did not receive errorMessage from server side"); 
+			inFromServer = new BufferedReader(new InputStreamReader(clientSocket.getInputStream())); 												
+			errorMessage = inFromServer.readLine();
+			System.out.println("have received errorMessage from server side"); 
+			System.out.println("from server: " + errorMessage);
+		}
+		catch(IOException e) {
+		  	e.printStackTrace();
+		}
+
+		
+		if (errorMessage.charAt(0) == '+') {
+			ACCT();
+		}
+		else if (errorMessage.charAt(0) == '!') {
+			System.out.println("u r logged in"); 
 		}
 		else {
-			return true;
+			System.out.println("ape ni: " + errorMessage.charAt(0));
+			USER();
 		}
 	}
 
 	public void ACCT() throws Exception {
 		
-		System.out.println("username: ");
-		BufferedReader inFromUser = new BufferedReader(new InputStreamReader(System.in)); 
-		Socket clientSocket = new Socket("localhost", 1024); 
-		DataOutputStream outToServer = new DataOutputStream(clientSocket.getOutputStream()); 
-		BufferedReader inFromServer = new BufferedReader(new InputStreamReader(clientSocket.getInputStream())); 
-		sentence = "USER[ " + inFromUser.readLine() + "]"; 
-		outToServer.writeBytes(sentence + '\n'); 
+		System.out.println("account: ");
+		sentence = "ACCT[ " + inFromUser.readLine() + "]"; 
 
-		errorMessage = inFromServer.readLine(); 
-		System.out.println("from server: " + errorMessage); 		
+		try {
+			outToServer.writeBytes(sentence + "\n"); 
+		  	System.out.println("did not receive errorMessage from server side");
+			inFromServer = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
+			errorMessage = inFromServer.readLine();
+			System.out.println("have received errorMessage from server side"); 
+			System.out.println("from server: " + errorMessage); 
+		}
+		catch(IOException e) {
+		  	e.printStackTrace();
+		}
 		
+		if (errorMessage.charAt(0) == '+') {
+			System.out.println("call PASS"); 
+		}
+		else if (errorMessage.charAt(0) == '!') {
+			System.out.println("u r logged in, call TYPE"); 
+		}
+		else {
+			ACCT();
+		}		
 	}
+
 	
     public static void main(String argv[]) throws Exception 
     { 
@@ -54,12 +80,7 @@ class clientTCP {
 		inFromUser = new BufferedReader(new InputStreamReader(System.in)); 
 		clientSocket = new Socket("localhost", 1024); 
 		outToServer = new DataOutputStream(clientSocket.getOutputStream()); 
-		inFromServer = new BufferedReader(new InputStreamReader(clientSocket.getInputStream())); 												
-
-		while (server.USER()) {
-			server.USER();
-			System.out.println("from server: " + errorMessage); 
-		};
-
+		server.USER();
+		
     } 
 } 
