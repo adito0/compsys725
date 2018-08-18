@@ -31,7 +31,7 @@ class serverTCP {
 		System.out.println("a client is connected..."); 		
 		inFromClient = new BufferedReader(new InputStreamReader(connectionSocket.getInputStream())); 
 		outToClient = new DataOutputStream(connectionSocket.getOutputStream()); 
-		//outToClient.writeBytes("+CS725 SFTP Service");
+		outToClient.writeBytes("+CS725 SFTP Service\n");
 	}
 	
 	public void checkValidCommand() throws Exception {
@@ -64,7 +64,6 @@ class serverTCP {
 		else {
 			System.out.println("client has disconnected..."); 
 			acceptConnection();
-			
 			checkValidCommand();
 		}
 				
@@ -175,9 +174,7 @@ class serverTCP {
 		//setup of welcoming socket
 		welcomeSocket = new ServerSocket(1024); 
 		server.acceptConnection();
-		
-
-		
+			
 		while(true) {
 			server.checkValidCommand(); 
 		} 

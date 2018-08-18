@@ -15,6 +15,21 @@ class clientTCP {
 	public static DataOutputStream outToServer;
 	public static BufferedReader inFromServer;
 	
+	public void attemptConnection() throws Exception {
+		inFromUser = new BufferedReader(new InputStreamReader(System.in)); 
+		clientSocket = new Socket("localhost", 1024); 
+		outToServer = new DataOutputStream(clientSocket.getOutputStream()); 
+		inFromServer = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
+		errorMessage = inFromServer.readLine();
+		if (errorMessage.equalsIgnoreCase("+CS725 SFTP Service")) {
+			USER();
+		}
+		else {
+			System.out.println("from server: " + errorMessage);
+			clientSocket.close();
+		}
+	}
+	
 	public void USER() throws Exception {
 		System.out.println("username: ");
 		sentence = "USER[ " + inFromUser.readLine() + "]"; 
@@ -143,14 +158,7 @@ class clientTCP {
     { 
 		//create new instance of TCPServer
 		clientTCP server = new clientTCP();		
-		inFromUser = new BufferedReader(new InputStreamReader(System.in)); 
-		clientSocket = new Socket("localhost", 1024); 
-		outToServer = new DataOutputStream(clientSocket.getOutputStream()); 
-		inFromServer = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
-		//errorMessage = inFromServer.readLine();
-		//if (errorMessage == "+CS725 SFTP Service") {
-			server.USER();
-		//} 
+		server.attemptConnection();
 
     } 
 } 
