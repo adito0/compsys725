@@ -1,7 +1,6 @@
 /**
- * Code is taken from Computer Networking: A Top-Down Approach Featuring 
- * the Internet, second edition, copyright 1996-2002 J.F Kurose and K.W. Ross, 
- * All Rights Reserved.
+ * author: Ira Sukimin (isuk218@aucklanduni.ac.nz)
+ * COMPSYS725 - Computer Networks and Distributed Applications
  **/
 
 import java.io.*; 
@@ -32,6 +31,7 @@ class TCPClient {
 		TCPClient server = new TCPClient();		
 
 		while (true) {
+			
 			server.USER();
 
 			//clientSocket.close(); 
