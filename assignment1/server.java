@@ -228,74 +228,67 @@ class serverTCP {
 		System.out.println("LIST() called");
 		String outputList = "+\n./\n../\n";  // Current and parent directories
 		
-		if (args.equalsIgnoreCase("f")) {
-			File path = currentDirectory;
-			StringTokenizer tokentizedSentence = new StringTokenizer(args);
-			tokentizedSentence.nextToken();
+		File path = currentDirectory;
+		StringTokenizer tokentizedSentence = new StringTokenizer(args);
+		tokentizedSentence.nextToken();
 
-			// No type in arguments
-			if (!tokentizedSentence.hasMoreTokens()) {
-				errorMessage = "-missing argument";
-			}
-
-			args = tokentizedSentence.nextToken().toUpperCase();
-			
-			try {
-				path = new File(currentDirectory.toString() + "/" + tokentizedSentence.nextToken());
-
-				// Requested directory doesn't exist
-				if (!path.isDirectory()) {
-					errorMessage = "-not a directory";
-				}
-			} catch (NoSuchElementException e) {
-				// missing second argument, i.e. current directory
-			}
-
-			// Dateformat for verbose print
-			SimpleDateFormat dateFormat = new SimpleDateFormat("dd/MM/yyyy kk:mm");
-
-			File files[] = path.listFiles();
-
-			// Go through each file in the directory
-			for (File f : files) {
-				String filename = f.getName();
-
-				// Append / to directories
-				if (f.isDirectory()) {
-					filename = filename.concat("/");
-				}
-
-				// Verbose, get information on the file
-				if (args.equalsIgnoreCase("V")) {
-					long modifiedTime = f.lastModified();
-					String modifiedDate = dateFormat.format(new Date(modifiedTime));
-					String size = String.valueOf(f.length());
-					String owner = "";
-
-					// Get file owner's name
-					try {
-						 FileOwnerAttributeView attr = Files.getFileAttributeView(f.toPath(), FileOwnerAttributeView.class);
-						 owner = attr.getOwner().getName();
-					} catch (IOException e) {	
-						e.printStackTrace();
-					}
-
-					// print structure:   filename   modified time    size    owner
-					outputList = outputList.concat(String.format("%-30s %-20s %10s %20s \r\n", filename, modifiedDate, size, owner));
-
-				// Non verbose, filename only
-				} else {
-					outputList = outputList.concat(String.format("%s \r\n", filename));
-				}
-			}
-
-			errorMessage = outputList;			
-			
+		// No type in arguments
+		if (!tokentizedSentence.hasMoreTokens()) {
+			errorMessage = "-missing argument";
 		}
-		else if (args.equalsIgnoreCase("v")) {
-			fileType = "b";
-		} 
 
+		args = tokentizedSentence.nextToken().toUpperCase();
+
+		try {
+			path = new File(currentDirectory.toString() + "/" + tokentizedSentence.nextToken());
+
+			// Requested directory doesn't exist
+			if (!path.isDirectory()) {
+				errorMessage = "-not a directory";
+			}
+		} catch (NoSuchElementException e) {
+			// missing second argument, i.e. current directory
+		}
+
+		// Dateformat for verbose print
+		SimpleDateFormat dateFormat = new SimpleDateFormat("dd/MM/yyyy kk:mm");
+
+		File files[] = path.listFiles();
+
+		// Go through each file in the directory
+		for (File f : files) {
+			String filename = f.getName();
+
+			// Append / to directories
+			if (f.isDirectory()) {
+				filename = filename.concat("/");
+			}
+
+			// Verbose, get information on the file
+			if (args.equalsIgnoreCase("V")) {
+				long modifiedTime = f.lastModified();
+				String modifiedDate = dateFormat.format(new Date(modifiedTime));
+				String size = String.valueOf(f.length());
+				String owner = "";
+
+				// Get file owner's name
+				try {
+					 FileOwnerAttributeView attr = Files.getFileAttributeView(f.toPath(), FileOwnerAttributeView.class);
+					 owner = attr.getOwner().getName();
+				} catch (IOException e) {	
+					e.printStackTrace();
+				}
+
+				// print structure:   filename   modified time    size    owner
+				outputList = outputList.concat(String.format("%-30s %-20s %10s %20s \r\n", filename, modifiedDate, size, owner));
+
+			// Non verbose, filename only
+			} else {
+				outputList = outputList.concat(String.format("%s \r\n", filename));
+			}
+		}
+
+		errorMessage = outputList;
 		outToClient.writeBytes("+" + errorMessage + "\n");	
 	}
 	
