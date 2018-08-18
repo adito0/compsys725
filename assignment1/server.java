@@ -24,29 +24,50 @@ class serverTCP {
 	public static BufferedReader inFromClient;
 	public static DataOutputStream outToClient;
 	
+	
+	public void acceptConnection() throws Exception {
+		System.out.println("server is running..."); 
+		connectionSocket = welcomeSocket.accept();	
+		System.out.println("a client is connected..."); 		
+		inFromClient = new BufferedReader(new InputStreamReader(connectionSocket.getInputStream())); 
+		outToClient = new DataOutputStream(connectionSocket.getOutputStream()); 
+		//outToClient.writeBytes("+CS725 SFTP Service");
+	}
+	
 	public void checkValidCommand() throws Exception {
+
 		command = inFromClient.readLine();
-		String[] parts = command.split("\\[ ",2);
-		cmd = parts[0];
-		String a = parts[1];
-		String[] kentuts = a.split("\\]",2);
-		args = kentuts[0];
 		
-		if (cmd.equalsIgnoreCase("USER")) {
-			USER();
+		if (command != null) {
+			String[] parts = command.split("\\[ ",2);
+			cmd = parts[0];
+			String a = parts[1];
+			String[] kentuts = a.split("\\]",2);
+			args = kentuts[0];
+
+			if (cmd.equalsIgnoreCase("USER")) {
+				USER();
+			}
+			else if (cmd.equalsIgnoreCase("ACCT")) {
+				ACCT();
+			}
+			else if (cmd.equalsIgnoreCase("PASS")) {
+				PASS();
+			}	
+			else if (cmd.equalsIgnoreCase("TYPE")) {
+				TYPE();
+			}	
+			else if (cmd.equalsIgnoreCase("LIST")) {
+				LIST();
+			}				
 		}
-		else if (cmd.equalsIgnoreCase("ACCT")) {
-			ACCT();
+		else {
+			System.out.println("client has disconnected..."); 
+			acceptConnection();
+			
+			checkValidCommand();
 		}
-		else if (cmd.equalsIgnoreCase("PASS")) {
-			PASS();
-		}	
-		else if (cmd.equalsIgnoreCase("TYPE")) {
-			TYPE();
-		}	
-		else if (cmd.equalsIgnoreCase("LIST")) {
-			LIST();
-		}					
+				
 	}
 	
 	public void USER() throws Exception {
@@ -153,13 +174,9 @@ class serverTCP {
 	
 		//setup of welcoming socket
 		welcomeSocket = new ServerSocket(1024); 
-		System.out.println("server is running..."); 
+		server.acceptConnection();
 		
-		connectionSocket = welcomeSocket.accept();
-		
-		inFromClient = new BufferedReader(new InputStreamReader(connectionSocket.getInputStream())); 
-		outToClient = new DataOutputStream(connectionSocket.getOutputStream()); 
-		//outToClient.writeBytes("+CS725 SFTP Service");
+
 		
 		while(true) {
 			server.checkValidCommand(); 
