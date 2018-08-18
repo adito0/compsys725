@@ -6,12 +6,34 @@
 import java.io.*; 
 import java.net.*;
 
-class TCPClient { 
+class clientTCP { 
    
 	public static String sentence; 
 	public static String errorMessage; 	
+	public static BufferedReader inFromUser;
+	public static Socket clientSocket;
+	public static DataOutputStream outToServer;
+	public static BufferedReader inFromServer;
 	
-	public void USER() throws Exception {
+	public boolean USER() throws Exception {
+		
+		System.out.println("username: ");
+		sentence = "USER[ " + inFromUser.readLine() + "]"; 
+		outToServer.writeBytes(sentence + '\n'); 
+
+		errorMessage = inFromServer.readLine(); 
+		
+		if (errorMessage.indexOf(0) == '+') {
+			
+			return false;
+		}
+		else {
+			return true;
+		}
+	}
+
+	public void ACCT() throws Exception {
+		
 		System.out.println("username: ");
 		BufferedReader inFromUser = new BufferedReader(new InputStreamReader(System.in)); 
 		Socket clientSocket = new Socket("localhost", 1024); 
@@ -28,13 +50,16 @@ class TCPClient {
     public static void main(String argv[]) throws Exception 
     { 
 		//create new instance of TCPServer
-		TCPClient server = new TCPClient();		
+		clientTCP server = new clientTCP();		
+		inFromUser = new BufferedReader(new InputStreamReader(System.in)); 
+		clientSocket = new Socket("localhost", 1024); 
+		outToServer = new DataOutputStream(clientSocket.getOutputStream()); 
+		inFromServer = new BufferedReader(new InputStreamReader(clientSocket.getInputStream())); 												
 
-		while (true) {
-			
+		while (server.USER()) {
 			server.USER();
+			System.out.println("from server: " + errorMessage); 
+		};
 
-			//clientSocket.close(); 
-		}
     } 
 } 

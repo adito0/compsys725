@@ -6,7 +6,7 @@
 import java.io.*; 
 import java.net.*; 
 
-class TCPServer { 
+class serverTCP { 
  
 	//variable declaration
 	public static String args;
@@ -30,7 +30,11 @@ class TCPServer {
 		if (cmd.equalsIgnoreCase("USER")) {
 			USER();
 		}
-		
+		else if (cmd.equalsIgnoreCase("ACCT")) {
+			ACCT();
+		}
+		System.out.println("errorMessage: " + errorMessage);
+		outToClient.writeBytes(errorMessage);				
 	}
 	
 	public void USER() throws Exception {
@@ -47,15 +51,28 @@ class TCPServer {
 			errorMessage = "! user is already logged in";
 		}					
 		System.out.println("args: " + args);
-		System.out.println("errorMessage: " + errorMessage);
+	}
 
-		outToClient.writeBytes(errorMessage);		
+	public void ACCT() throws Exception {
+		
+		if (loggedIn == false) {
+			if (args.equalsIgnoreCase("syammy")) {
+				errorMessage = "+ login was succesful";
+				loggedIn = true;
+			} else {
+				errorMessage = "- user does not exist";
+			}
+		}
+		else {
+			errorMessage = "! user is already logged in";
+		}					
+		System.out.println("args: " + args);	
 	}
 	
     public static void main(String argv[]) throws Exception {
 		
-		//create new instance of TCPServer
-		TCPServer server = new TCPServer();
+		//create new instance of serverTCP
+		serverTCP server = new serverTCP();
 		
 		String command; 
 	
@@ -67,11 +84,9 @@ class TCPServer {
 			System.out.println("server is running..."); 
 			connectionSocket = welcomeSocket.accept(); 
 			System.out.println("incoming data..."); 
-
 			inFromClient = new BufferedReader(new InputStreamReader(connectionSocket.getInputStream())); 
 			outToClient = new DataOutputStream(connectionSocket.getOutputStream()); 
 			command = inFromClient.readLine(); 
-			
 			server.checkValidCommand(command); 
  
         } 
