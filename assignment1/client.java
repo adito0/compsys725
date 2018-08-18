@@ -33,7 +33,8 @@ class clientTCP {
 			ACCT();
 		}
 		else if (errorMessage.charAt(0) == '!') {
-			System.out.println("u r logged in"); 
+			System.out.println("u r logged in");
+			TYPE();
 		}
 		else if (errorMessage.charAt(0) == '-') {
 			USER();
@@ -146,7 +147,10 @@ class clientTCP {
 		clientSocket = new Socket("localhost", 1024); 
 		outToServer = new DataOutputStream(clientSocket.getOutputStream()); 
 		inFromServer = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
-		server.USER();
-		
+		//errorMessage = inFromServer.readLine();
+		//if (errorMessage == "+CS725 SFTP Service") {
+			server.USER();
+		//} 
+
     } 
 } 

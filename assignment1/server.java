@@ -12,7 +12,7 @@ class serverTCP {
 	public static String args;
 	public static String cmd;
 	public static String command; 
-	public static String fileType; 
+	public static String fileType = "b"; 
 	
 	public static String errorMessage = "! unidentified error";
 	public static boolean userLoggedIn = false;
@@ -51,6 +51,7 @@ class serverTCP {
 	
 	public void USER() throws Exception {
 		System.out.println("USER() called");
+		String username = args;
 		
 		if (userLoggedIn == false) {
 			if (args.equalsIgnoreCase("syammy")) {
@@ -63,54 +64,39 @@ class serverTCP {
 		else {
 			errorMessage = "! user is already logged in";
 		}	
-		
-		try {
-			outToClient.writeBytes(errorMessage + "\n"); 	
-		}
-		catch(IOException e) {
-		  	e.printStackTrace();
-		}		
-
+		outToClient.writeBytes(errorMessage + "\n");
 	}
 
 	public void ACCT() throws Exception {
 		System.out.println("ACCT() called");
+		String account = args;
+		
 		if (accountLoggedIn == false) {		
 			if (args.equalsIgnoreCase("syumu")) {
 				errorMessage = "+ login was succesful";
 				accountLoggedIn = true;
 			} else {
 				errorMessage = "- account does not exist";
-			}	
+			}
 		}	
 		else {
 			errorMessage = "! account is already logged in";
 		}
-		try {
-			outToClient.writeBytes(errorMessage + "\n"); 
-		}
-		catch(IOException e) {
-		  	e.printStackTrace();
-		}		
+		outToClient.writeBytes(errorMessage + "\n"); 
 	}
 
 	public void PASS() throws Exception {
 		System.out.println("PASS() called");
-	
+		String password = args;
+		
 		if (args.equalsIgnoreCase("kentut")) {
 			errorMessage = "! logged in"; //"+ password ok but u havent specified the account";
 			accountLoggedIn = true;
 		} 
 		else {
-			errorMessage = "- account does not exist";
-		}	
-	
-		try {
-			outToClient.writeBytes(errorMessage + "\n"); 
-		}
-		catch(IOException e) {
-		  	e.printStackTrace();
+			errorMessage = "- wrong password try again"; 
 		}		
+		outToClient.writeBytes(errorMessage + "\n");
 	}	
 
 	public void TYPE() throws Exception {
@@ -126,19 +112,12 @@ class serverTCP {
 		} 
 		else if (args.equalsIgnoreCase("c")) {
 			fileType = "c";
-			errorMessage = "+ using Continuous mode";
+			errorMessage = "+ using Continuous mode"; 
 		}
 		else {
 			errorMessage = "- type not valid";
-			TYPE();
 		}
-		
-		try {
-			outToClient.writeBytes(errorMessage + "\n"); 
-		}
-		catch(IOException e) {
-		  	e.printStackTrace();
-		}		
+		outToClient.writeBytes(errorMessage + "\n");
 	}
 	
 	public void LIST() throws Exception {
@@ -156,17 +135,15 @@ class serverTCP {
 			fileType = "c";
 			errorMessage = "+ using Continuous mode";
 		}
+		else if (args == "") {
+			fileType = "b";
+			errorMessage = "+ using Binary mode";
+		}
 		else {
 			errorMessage = "- type not valid";
-			TYPE();
 		}
 		
-		try {
-			outToClient.writeBytes(errorMessage + "\n"); 
-		}
-		catch(IOException e) {
-		  	e.printStackTrace();
-		}		
+		outToClient.writeBytes(errorMessage + "\n");	
 	}
 	
     public static void main(String argv[]) throws Exception {
@@ -182,6 +159,7 @@ class serverTCP {
 		
 		inFromClient = new BufferedReader(new InputStreamReader(connectionSocket.getInputStream())); 
 		outToClient = new DataOutputStream(connectionSocket.getOutputStream()); 
+		//outToClient.writeBytes("+CS725 SFTP Service");
 		
 		while(true) {
 			server.checkValidCommand(); 
