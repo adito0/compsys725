@@ -21,11 +21,11 @@ class clientTCP {
 		outToServer = new DataOutputStream(clientSocket.getOutputStream()); 
 		inFromServer = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
 		errorMessage = inFromServer.readLine();
-		if (errorMessage.equalsIgnoreCase("+CS725 SFTP Service")) {
+		if (errorMessage.charAt(0) == '+') {
 			USER();
 		}
 		else {
-			System.out.println("from server: " + errorMessage);
+			System.out.println("could not connect to server");
 			clientSocket.close();
 		}
 	}

@@ -5,6 +5,7 @@
 
 import java.io.*; 
 import java.net.*; 
+import java.util.ArrayList;
 
 class serverTCP { 
  
@@ -13,11 +14,19 @@ class serverTCP {
 	public static String cmd;
 	public static String command; 
 	public static String fileType = "b"; 
+	public static String currentUser;
+	public static String currentAccount;
+	public static String currentPassword;
+	
+	public static ArrayList<String> loggedInUsers;
+	
 	
 	public static String errorMessage = "! unidentified error";
 	public static boolean userLoggedIn = false;
 	public static boolean accountLoggedIn = false;
 	public static boolean freeToConnect = true;
+	public static boolean outToLunch = false;
+	public static boolean existsInList = false;
 	
 	public static ServerSocket welcomeSocket;
 	public static Socket connectionSocket;
@@ -27,11 +36,17 @@ class serverTCP {
 	
 	public void acceptConnection() throws Exception {
 		System.out.println("server is running..."); 
-		connectionSocket = welcomeSocket.accept();	
-		System.out.println("a client is connected..."); 		
+		connectionSocket = welcomeSocket.accept();		
 		inFromClient = new BufferedReader(new InputStreamReader(connectionSocket.getInputStream())); 
 		outToClient = new DataOutputStream(connectionSocket.getOutputStream()); 
-		outToClient.writeBytes("+CS725 SFTP Service\n");
+		if (outToLunch == true) {
+			outToClient.writeBytes("-CS725 SFTP Service\n");
+			connectionSocket.close();
+		}
+		else {
+			outToClient.writeBytes("+CS725 SFTP Service\n");	
+			System.out.println("a client is connected..."); 
+		}
 	}
 	
 	public void checkValidCommand() throws Exception {
@@ -68,40 +83,84 @@ class serverTCP {
 		}
 				
 	}
+
+	public void readFile(String fileName, String args) throws Exception {
+		BufferedReader br = new BufferedReader(new FileReader(fileName));
+
+		StringBuilder sb = new StringBuilder();
+		String line = br.readLine();
+		String[] parts0;
+		String parts1;
+		String[] parts2;
+		String a;
+		currentUser = null;
+		currentAccount = null;
+		currentPassword = null;
+		existsInList = false;
+		
+		while (line != null) {
+
+			sb.append(line);
+			sb.append(System.lineSeparator());
+
+			line = br.readLine();
+			if (line != null) {
+				parts0 = line.split("\\[",2);
+				currentUser = parts0[0];
+				parts1 = parts0[1];
+				parts2 = parts1.split("\\]",2);
+				currentAccount = parts2[0];
+				currentPassword = parts2[1];
+				if (currentUser.equalsIgnoreCase(args)) {
+					System.out.println("currentUser: " + currentUser); 
+					System.out.println("currentAccount: " + currentAccount); 
+					System.out.println("currentPassword: " + currentPassword);
+					existsInList = true;
+					break;
+				}
+			}
+		}
+				
+ 		br.close();		
+	}
 	
 	public void USER() throws Exception {
 		System.out.println("USER() called");
-		String username = args;
-		
-		if (userLoggedIn == false) {
-			if (args.equalsIgnoreCase("syammy")) {
-				errorMessage = "+ login was succesful";
-				userLoggedIn = true;
-			} else {
-				errorMessage = "- user does not exist";
-			}
+		readFile("userList.txt",args);
+		if (existsInList == false) {
+			errorMessage = "-invalid user-id, try again";
 		}
 		else {
-			errorMessage = "! user is already logged in";
-		}	
-		outToClient.writeBytes(errorMessage + "\n");
+			if (loggedInUsers.contains(currentUser)) {
+				errorMessage = "!" + currentUser + " logged in";
+			}
+			else {
+				if (currentUser.equalsIgnoreCase("admin")) {
+					errorMessage = "!" + currentUser + " logged in";
+					loggedInUsers.add(currentUser);
+				}
+				else {
+					errorMessage = "+user-id valid, send account and password";
+				}	
+			}
+		
+		}
+		outToClient.writeBytes(errorMessage + "\n");		
 	}
-
+	
 	public void ACCT() throws Exception {
-		System.out.println("ACCT() called");
-		String account = args;
+		System.out.println("ACCT() called"); 
 		
-		if (accountLoggedIn == false) {		
-			if (args.equalsIgnoreCase("syumu")) {
-				errorMessage = "+ login was succesful";
-				accountLoggedIn = true;
-			} else {
-				errorMessage = "- account does not exist";
-			}
-		}	
-		else {
-			errorMessage = "! account is already logged in";
+		if ((currentUser.equalsIgnoreCase("admin")) || (loggedInUsers.contains(currentUser))) {
+			errorMessage = "!account was not needed. skip the password";
 		}
+		else if (args.equalsIgnoreCase(currentAccount)) {
+			errorMessage = "+account valid, send your password next";
+		}
+		else {
+			errorMessage = "-invalid account, try again";
+		}
+
 		outToClient.writeBytes(errorMessage + "\n"); 
 	}
 
@@ -110,11 +169,11 @@ class serverTCP {
 		String password = args;
 		
 		if (args.equalsIgnoreCase("kentut")) {
-			errorMessage = "! logged in"; //"+ password ok but u havent specified the account";
+			errorMessage = "!logged in"; //"+ password ok but u havent specified the account";
 			accountLoggedIn = true;
 		} 
 		else {
-			errorMessage = "- wrong password try again"; 
+			errorMessage = "-wrong password try again"; 
 		}		
 		outToClient.writeBytes(errorMessage + "\n");
 	}	
@@ -124,18 +183,18 @@ class serverTCP {
 	
 		if (args.equalsIgnoreCase("a")) {
 			fileType = "a";
-			errorMessage = "+ using Ascii mode";
+			errorMessage = "+using Ascii mode";
 		} 
 		else if (args.equalsIgnoreCase("b")) {
 			fileType = "b";
-			errorMessage = "+ using Binary mode";
+			errorMessage = "+using Binary mode";
 		} 
 		else if (args.equalsIgnoreCase("c")) {
 			fileType = "c";
-			errorMessage = "+ using Continuous mode"; 
+			errorMessage = "+using Continuous mode"; 
 		}
 		else {
-			errorMessage = "- type not valid";
+			errorMessage = "-type not valid";
 		}
 		outToClient.writeBytes(errorMessage + "\n");
 	}
@@ -149,18 +208,18 @@ class serverTCP {
 		} 
 		else if (args.equalsIgnoreCase("b")) {
 			fileType = "b";
-			errorMessage = "+ using Binary mode";
+			errorMessage = "+using Binary mode";
 		} 
 		else if (args.equalsIgnoreCase("c")) {
 			fileType = "c";
-			errorMessage = "+ using Continuous mode";
+			errorMessage = "+using Continuous mode";
 		}
 		else if (args == "") {
 			fileType = "b";
-			errorMessage = "+ using Binary mode";
+			errorMessage = "+using Binary mode";
 		}
 		else {
-			errorMessage = "- type not valid";
+			errorMessage = "-type not valid";
 		}
 		
 		outToClient.writeBytes(errorMessage + "\n");	
@@ -170,6 +229,7 @@ class serverTCP {
 		
 		//create new instance of serverTCP
 		serverTCP server = new serverTCP();
+		loggedInUsers = new ArrayList();
 	
 		//setup of welcoming socket
 		welcomeSocket = new ServerSocket(1024); 
