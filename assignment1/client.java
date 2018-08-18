@@ -10,6 +10,9 @@ class clientTCP {
    
 	public static String sentence; 
 	public static String errorMessage; 	
+	
+	public static boolean skipPassword = false;
+	
 	public static BufferedReader inFromUser;
 	public static Socket clientSocket;
 	public static DataOutputStream outToServer;
@@ -71,7 +74,13 @@ class clientTCP {
 		}
 		
 		if (errorMessage.charAt(0) == '+') {
-			PASS();
+			if (skipPassword) {
+				skipPassword = false;
+				TYPE();
+			} 
+			else {
+				PASS();
+			}
 		}
 		else if (errorMessage.charAt(0) == '!') {
 			TYPE();	
@@ -96,6 +105,7 @@ class clientTCP {
 		}
 		
 		if (errorMessage.charAt(0) == '+') {
+			skipPassword = true;
 			ACCT();
 		}
 		else if (errorMessage.charAt(0) == '!') {

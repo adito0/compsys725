@@ -27,6 +27,8 @@ class serverTCP {
 	public static boolean freeToConnect = true;
 	public static boolean outToLunch = false;
 	public static boolean existsInList = false;
+	public static boolean accountSpecified = false;
+	public static boolean skipPassword = false;
 	
 	public static ServerSocket welcomeSocket;
 	public static Socket connectionSocket;
@@ -152,10 +154,21 @@ class serverTCP {
 		System.out.println("ACCT() called"); 
 		
 		if ((currentUser.equalsIgnoreCase("admin")) || (loggedInUsers.contains(currentUser))) {
+			accountSpecified = true;
 			errorMessage = "!account was not needed. skip the password";
 		}
 		else if (args.equalsIgnoreCase(currentAccount)) {
-			errorMessage = "+account valid, send your password next";
+			accountSpecified = true;
+			if (skipPassword) {
+				errorMessage = "!account ok. skip the password";
+			}
+			else {
+				errorMessage = "+account valid, send password";
+			}
+		}
+		else if (args.equalsIgnoreCase("")) {
+			accountSpecified = false;
+			errorMessage = "+send password";
 		}
 		else {
 			errorMessage = "-invalid account, try again";
@@ -166,16 +179,21 @@ class serverTCP {
 
 	public void PASS() throws Exception {
 		System.out.println("PASS() called");
-		String password = args;
 		
-		if (args.equalsIgnoreCase("kentut")) {
-			errorMessage = "!logged in"; //"+ password ok but u havent specified the account";
-			accountLoggedIn = true;
-		} 
+		if ((currentUser.equalsIgnoreCase("admin")) || (loggedInUsers.contains(currentUser)) || (args.equalsIgnoreCase(currentPassword))) {
+			if (accountSpecified) {
+				errorMessage = "!logged in";
+			}
+			else {
+				skipPassword = true;
+				errorMessage = "+send account";
+			}
+		}
 		else {
-			errorMessage = "-wrong password try again"; 
-		}		
-		outToClient.writeBytes(errorMessage + "\n");
+			errorMessage = "-wrong password, try again";
+		}
+
+		outToClient.writeBytes(errorMessage + "\n"); 
 	}	
 
 	public void TYPE() throws Exception {
