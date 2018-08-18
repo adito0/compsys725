@@ -36,17 +36,10 @@ class clientTCP {
 	public void USER() throws Exception {
 		System.out.println("username: ");
 		sentence = "USER[ " + inFromUser.readLine() + "]"; 
-		
-		try {
-			outToServer.writeBytes(sentence + "\n");  												
-			errorMessage = inFromServer.readLine();
-			System.out.println("from server: " + errorMessage);
-		}
-		catch(IOException e) {
-		  	e.printStackTrace();
-		}
+		outToServer.writeBytes(sentence + "\n");  												
+		errorMessage = inFromServer.readLine();
+		System.out.println("from server: " + errorMessage);
 
-		
 		if (errorMessage.charAt(0) == '+') {
 			ACCT();
 		}
@@ -63,15 +56,9 @@ class clientTCP {
 		
 		System.out.println("account: ");
 		sentence = "ACCT[ " + inFromUser.readLine() + "]"; 
-
-		try {
-			outToServer.writeBytes(sentence + "\n"); 
-			errorMessage = inFromServer.readLine();
-			System.out.println("from server: " + errorMessage); 
-		}
-		catch(IOException e) {
-		  	e.printStackTrace();
-		}
+		outToServer.writeBytes(sentence + "\n"); 
+		errorMessage = inFromServer.readLine();
+		System.out.println("from server: " + errorMessage); 
 		
 		if (errorMessage.charAt(0) == '+') {
 			if (skipPassword) {
@@ -94,15 +81,9 @@ class clientTCP {
 		
 		System.out.println("password: ");
 		sentence = "PASS[ " + inFromUser.readLine() + "]"; 
-
-		try {
-			outToServer.writeBytes(sentence + "\n"); 
-			errorMessage = inFromServer.readLine();
-			System.out.println("from server: " + errorMessage); 
-		}
-		catch(IOException e) {
-		  	e.printStackTrace();
-		}
+		outToServer.writeBytes(sentence + "\n"); 
+		errorMessage = inFromServer.readLine();
+		System.out.println("from server: " + errorMessage); 
 		
 		if (errorMessage.charAt(0) == '+') {
 			skipPassword = true;
@@ -120,15 +101,10 @@ class clientTCP {
 		
 		System.out.println("file type: ");
 		sentence = "TYPE[ " + inFromUser.readLine() + "]"; 
+		outToServer.writeBytes(sentence + "\n"); 
+		errorMessage = inFromServer.readLine();
+		System.out.println("from server: " + errorMessage); 
 
-		try {
-			outToServer.writeBytes(sentence + "\n"); 
-			errorMessage = inFromServer.readLine();
-			System.out.println("from server: " + errorMessage); 
-		}
-		catch(IOException e) {
-		  	e.printStackTrace();
-		}
 		
 		if (errorMessage.charAt(0) == '+') {
 		  	System.out.println("file type is valid");
@@ -144,15 +120,10 @@ class clientTCP {
 		
 		System.out.println("directory path: ");
 		sentence = "LIST[ " + inFromUser.readLine() + "]"; 
+		outToServer.writeBytes(sentence + "\n"); 
+		errorMessage = inFromServer.readLine();
+		System.out.println("from server: " + errorMessage); 
 
-		try {
-			outToServer.writeBytes(sentence + "\n"); 
-			errorMessage = inFromServer.readLine();
-			System.out.println("from server: " + errorMessage); 
-		}
-		catch(IOException e) {
-		  	e.printStackTrace();
-		}
 		
 		if (errorMessage.charAt(0) == '+') {
 		  	System.out.println("file type is valid");
