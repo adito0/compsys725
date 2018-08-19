@@ -115,6 +115,10 @@ class clientTCP {
 		}		
 	}	
 
+	public void processContinuousInputFromServer(String errorMessage) {
+		System.out.println("from server: " + errorMessage);
+	}	
+	
 	public void LIST() throws Exception {
 		
 		System.out.println("listing standard (f - standard, v - verbose): ");
@@ -124,16 +128,19 @@ class clientTCP {
 		sentence = "LIST[ " + listingStandard + directoryPath + "]"; 
 		outToServer.writeBytes(sentence + "\n"); 
 		errorMessage = inFromServer.readLine();
-		System.out.println("from server: " + errorMessage); 
-
 		
 		if (errorMessage.charAt(0) == '+') {
+			processContinuousInputFromServer(errorMessage);
 			//CDIR();
 		}
 		else if (errorMessage.charAt(0) == '-') {
 			LIST();
-		}		
+		}
+		else {
+			System.out.println("from server: " + errorMessage); 
+		}
 	}		
+	
 	
     public static void main(String argv[]) throws Exception 
     { 
