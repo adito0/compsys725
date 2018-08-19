@@ -287,7 +287,7 @@ class serverTCP {
 			}
 		}
 		
-		outToClient.writeBytes(outputList);
+		outToClient.writeBytes(outputList + "\0");
 
 	}
 	
@@ -298,7 +298,7 @@ class serverTCP {
 		loggedInUsers = new ArrayList();
 	
 		//setup of welcoming socket
-		welcomeSocket = new ServerSocket(4206); 
+		welcomeSocket = new ServerSocket(1500); 
 		server.acceptConnection();
 			
 		while(true) {

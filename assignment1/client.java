@@ -12,6 +12,7 @@ class clientTCP {
 	public static String errorMessage; 	
 	public static String listingStandard;
 	public static String directoryPath;
+	public static char errorMessageBytes;
 	
 	public static boolean skipPassword = false;
 	public static boolean incomingData = false;
@@ -19,12 +20,14 @@ class clientTCP {
 	public static BufferedReader inFromUser;
 	public static Socket clientSocket;
 	public static DataOutputStream outToServer;
+	public static DataInputStream inFromServerBytes;
 	public static BufferedReader inFromServer;
 	
 	public void attemptConnection() throws Exception {
 		inFromUser = new BufferedReader(new InputStreamReader(System.in)); 
-		clientSocket = new Socket("localhost", 4206); 
+		clientSocket = new Socket("localhost", 1500); 
 		outToServer = new DataOutputStream(clientSocket.getOutputStream()); 
+		inFromServerBytes = new DataInputStream(clientSocket.getInputStream()); 
 		inFromServer = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
 		errorMessage = inFromServer.readLine();
 		if (errorMessage.charAt(0) == '+') {
@@ -123,12 +126,11 @@ class clientTCP {
 		directoryPath = inFromUser.readLine();		
 		sentence = "LIST[ " + listingStandard + directoryPath + "]"; 
 		outToServer.writeBytes(sentence + "\n"); 
-		errorMessage = inFromServer.readLine();
+		errorMessage = readMessage();
 		
 		if (errorMessage.charAt(0) == '+') {
 			System.out.println(errorMessage);
-			clientSocket.close();
-			
+			LIST();
 		}
 		else if (errorMessage.charAt(0) == '-') {
 			LIST();
@@ -139,7 +141,29 @@ class clientTCP {
 			//CDIR();
 		}
 	}		
-	
+
+	public String readMessage() {
+	String sentence = "";
+	int character = 0;
+
+	while (true){
+		try {
+			character = inFromServer.read();  // Read one character
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+
+		// '\0' detected, return sentence.
+		if (character == 0) {
+			break;
+		}
+
+		// Concatenate char into sentence.
+		sentence = sentence.concat(Character.toString((char)character));
+	}
+
+	return sentence;
+}
 	
     public static void main(String argv[]) throws Exception 
     { 
