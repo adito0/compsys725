@@ -41,7 +41,8 @@ class serverTCP {
 	public static BufferedReader inFromClient;
 	public static DataOutputStream outToClient;
 	
-	private File currentDirectory = FileSystems.getDefault().getPath("").toFile().getAbsoluteFile();
+	private static final File defaultDirectory = FileSystems.getDefault().getPath("").toFile().getAbsoluteFile();
+	private File currentDirectory = defaultDirectory;
 	
 	public void acceptConnection() throws Exception {
 		System.out.println("server is running..."); 
@@ -229,7 +230,7 @@ class serverTCP {
 		int strlen = args.length();
 		char listingFormat = '\0';
 		String dir;
-		String outputList = "+\n./\n../\n"; ;
+
 		SimpleDateFormat dateFormat = new SimpleDateFormat("dd/MM/yyyy kk:mm");
 		
 		try {
@@ -249,11 +250,11 @@ class serverTCP {
 			dir = "";
 		}
 		
-		File path = currentDirectory;
-		path = new File(currentDirectory.toString() + "/" + dir);
+		File path = defaultDirectory;
+		path = new File(defaultDirectory.toString() + "/" + dir);
 		File files[] = path.listFiles();
 		//System.out.println("path: " + path);		
-		
+		String outputList = "+" + path + "\n./\n../\n"; 
 		// Go through each file in the directory
 		for (File f : files) {
 			String filename = f.getName();
@@ -290,6 +291,65 @@ class serverTCP {
 		outToClient.writeBytes(outputList + "\0");
 
 	}
+
+	public void CDIR() throws Exception {
+		System.out.println("CDIR() called");
+		
+		String newDirName = "";		
+		int strlen = args.length();
+		try {
+			newDirName = args.substring(0,strlen);
+		}
+		catch (StringIndexOutOfBoundsException e) {
+			errorMessage = "-cant't connect to directory because it doesn't exist";
+		}
+		
+		// Directory is relative to root, set current dir to default, then append requested dir
+		if (newDirName.charAt(0) == '~') {
+			newDirName = newDirName.replaceAll("~", "/");
+			currentDirectory = defaultDirectory;
+		}
+		
+		// Add / for directory
+		if (newDirName.charAt(0) != '/') {
+			newDirName = String.format("/%s", newDirName);
+		}
+		
+		if (newDirName.charAt(newDirName.length()-1) != '/') {
+			newDirName = newDirName.concat("/");
+		}
+		
+		File newDir = new File(currentDirectory.toString().concat(newDirName)).toPath().normalize().toFile();
+		System.out.println(newDir); 
+		// Client trying access folder above allocated "root" folder.
+		if (newDir.compareTo(defaultDirectory.getAbsoluteFile()) < 0){
+			outToClient.writeBytes("-Can't connect to directory because permission denied");
+		}
+		
+		// Specified directory is not a directory
+		if (!newDir.isDirectory()) {
+			outToClient.writeBytes("-Can't connect to directory because no such directory exists");
+		}
+		
+		// Replace portion of the path to ~
+		// Client doesn't need to know the absolute directory on the server
+		String newDirReply = String.format("~%s", newDir.toString().substring(defaultDirectory.toString().length()));
+		
+		// Already logged in
+		if ((loggedInUsers.contains(currentUser))) {
+			currentDirectory = newDir;
+			outToClient.writeBytes(String.format("!Changed working dir to %s", newDirReply));
+		// Need to log in
+		} else {
+			outToClient.writeBytes(String.format("+directory ok, send account/password", newDir));
+			
+			// Run CDIR authentication procedure
+			/**if (cdirAuthenticate()) {
+				currentDirectory = newDir;
+				outToClient.writeBytes(String.format("!Changed working dir to %s", newDirReply));
+			}**/
+		}
+	}	
 	
     public static void main(String argv[]) throws Exception {
 		

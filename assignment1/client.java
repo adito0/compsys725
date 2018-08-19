@@ -15,7 +15,7 @@ class clientTCP {
 	public static char errorMessageBytes;
 	
 	public static boolean skipPassword = false;
-	public static boolean incomingData = false;
+	public static boolean attemptCDIR = false;
 	
 	public static BufferedReader inFromUser;
 	public static Socket clientSocket;
@@ -38,6 +38,29 @@ class clientTCP {
 			clientSocket.close();
 		}
 	}
+
+	public String readMessage() {
+		String sentence = "";
+		int character = 0;
+
+		while (true){
+			try {
+				character = inFromServer.read();
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
+
+			// '\0' detected, return sentence.
+			if (character == 0) {
+				break;
+			}
+
+			// Concatenate char into sentence.
+			sentence = sentence.concat(Character.toString((char)character));
+		}
+
+		return sentence;
+	}	
 	
 	public void USER() throws Exception {
 		System.out.println("username: ");
@@ -128,42 +151,35 @@ class clientTCP {
 		outToServer.writeBytes(sentence + "\n"); 
 		errorMessage = readMessage();
 		
-		if (errorMessage.charAt(0) == '+') {
+		if (errorMessage.charAt(0) == '+') {			
+			System.out.println(errorMessage);
+			LIST();
+			//CDIR();
+		}
+		else if (errorMessage.charAt(0) == '-') {
 			System.out.println(errorMessage);
 			LIST();
 		}
-		else if (errorMessage.charAt(0) == '-') {
-			LIST();
-		}
-		else {
-			//incomingData = false;
-			System.out.println("broken");
-			//CDIR();
-		}
 	}		
 
-	public String readMessage() {
-	String sentence = "";
-	int character = 0;
+	public void CDIR() throws Exception {
+		
+		System.out.println("new directory: ");
+		sentence = "CDIR[ " + inFromUser.readLine() + "]"; 
+		outToServer.writeBytes(sentence + "\n"); 
+		errorMessage = inFromServer.readLine();
+		System.out.println("from server: " + errorMessage); 
 
-	while (true){
-		try {
-			character = inFromServer.read();  // Read one character
-		} catch (IOException e) {
-			e.printStackTrace();
+		if (errorMessage.charAt(0) == '!') {
+			//KILL();
 		}
-
-		// '\0' detected, return sentence.
-		if (character == 0) {
-			break;
+		else if (errorMessage.charAt(0) == '+') {
+			ACCT();
 		}
-
-		// Concatenate char into sentence.
-		sentence = sentence.concat(Character.toString((char)character));
-	}
-
-	return sentence;
-}
+		else if (errorMessage.charAt(0) == '-') {
+			CDIR();
+		}		
+	}		
 	
     public static void main(String argv[]) throws Exception 
     { 
