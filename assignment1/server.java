@@ -226,61 +226,68 @@ class serverTCP {
 	
 	public void LIST() throws Exception {
 		System.out.println("LIST() called");
-		String outputList = "";
-		File path = currentDirectory;
-		path = new File(currentDirectory.toString() + "/" + args.charAt(1));
-		File files[] = path.listFiles();
-		/**try {
-			path = new File(currentDirectory.toString() + "/" + args.charAt(1));
-			// Requested directory doesn't exist
-			if (!path.isDirectory()) {
-				errorMessage = "-not a directory";
+		int strlen = args.length();
+		char listingFormat = '\0';
+		String dir;
+		String outputList = "+\n./\n../\n"; ;
+		SimpleDateFormat dateFormat = new SimpleDateFormat("dd/MM/yyyy kk:mm");
+		
+		try {
+			listingFormat = args.charAt(0);
+			if ((listingFormat != 'v') || (listingFormat != 'f')) {
+				errorMessage = "-invalid file listing format";
 			}
-		} catch (NoSuchElementException e) {
-			// missing second argument, i.e. current directory
-		}**/
-		System.out.println("path: " + path);		
-			
-		if ((args.equalsIgnoreCase("vk")) || (args.equalsIgnoreCase("fk"))) { 
-			for (File f : files) {
-				String filename = f.getName();
-				// Append / to directories
-				if (f.isDirectory()) {
-					filename = filename.concat("/");
-				}
-				// Verbose, get information on the file
-				if (args.equalsIgnoreCase("vk")) {
-					long modifiedTime = f.lastModified();
-					SimpleDateFormat dateFormat = new SimpleDateFormat("dd/MM/yyyy kk:mm");
-					String modifiedDate = dateFormat.format(new Date(modifiedTime));
-					String size = String.valueOf(f.length());
-					String owner = "";
-					outputList = "\n./\n../"; 
-
-					try {
-						 FileOwnerAttributeView attr = Files.getFileAttributeView(f.toPath(), FileOwnerAttributeView.class);
-						 owner = attr.getOwner().getName();
-					} catch (IOException e) {	
-						e.printStackTrace();
-					}
-
-					// print structure:   filename   modified time    size    owner
-					outputList = outputList.concat(String.format("%-30s %-20s %10s %20s \r", filename, modifiedDate, size, owner));
-					
-				// Non verbose, filename only
-				} 
-				else if (args.equalsIgnoreCase("fk")) {
-					outputList = outputList.concat(String.format("%s \r", filename));
-				}
-				System.out.println("outputList: " + outputList);
-				errorMessage = "+" + outputList + "\n";
-			}		
-			System.out.println("errorMessage sent to client: " + errorMessage);
-			outToClient.writeBytes(errorMessage);	
 		}
-		else {
+		catch (StringIndexOutOfBoundsException e) {
 			errorMessage = "-invalid file listing format";
 		}
+		
+		try {
+			dir = args.substring(1,strlen);
+		}
+		catch (StringIndexOutOfBoundsException e) {
+			dir = "";
+		}
+		
+		File path = currentDirectory;
+		path = new File(currentDirectory.toString() + "/" + dir);
+		File files[] = path.listFiles();
+		//System.out.println("path: " + path);		
+		
+		// Go through each file in the directory
+		for (File f : files) {
+			String filename = f.getName();
+			
+			// Append / to directories
+			if (f.isDirectory()) {
+				filename = filename.concat("/");
+			}
+			
+			// Verbose, get information on the file
+			if (listingFormat == 'v') {
+				long modifiedTime = f.lastModified();
+				String modifiedDate = dateFormat.format(new Date(modifiedTime));
+				String size = String.valueOf(f.length());
+				String owner = "";
+
+				// Get file owner's name
+				try {
+					 FileOwnerAttributeView attr = Files.getFileAttributeView(f.toPath(), FileOwnerAttributeView.class);
+					 owner = attr.getOwner().getName();
+				} catch (IOException e) {	
+					e.printStackTrace();
+				}
+
+				// print structure:   filename   modified time    size    owner
+				outputList = outputList.concat(String.format("%-30s %-20s %10s %20s \r\n", filename, modifiedDate, size, owner));
+			
+			// Non verbose, filename only
+			} else {
+				outputList = outputList.concat(String.format("%s \r\n", filename));
+			}
+		}
+		
+		outToClient.writeBytes(outputList);
 
 	}
 	
@@ -291,7 +298,7 @@ class serverTCP {
 		loggedInUsers = new ArrayList();
 	
 		//setup of welcoming socket
-		welcomeSocket = new ServerSocket(1024); 
+		welcomeSocket = new ServerSocket(4206); 
 		server.acceptConnection();
 			
 		while(true) {

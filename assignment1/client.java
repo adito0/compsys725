@@ -14,6 +14,7 @@ class clientTCP {
 	public static String directoryPath;
 	
 	public static boolean skipPassword = false;
+	public static boolean incomingData = false;
 	
 	public static BufferedReader inFromUser;
 	public static Socket clientSocket;
@@ -22,7 +23,7 @@ class clientTCP {
 	
 	public void attemptConnection() throws Exception {
 		inFromUser = new BufferedReader(new InputStreamReader(System.in)); 
-		clientSocket = new Socket("localhost", 1024); 
+		clientSocket = new Socket("localhost", 4206); 
 		outToServer = new DataOutputStream(clientSocket.getOutputStream()); 
 		inFromServer = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
 		errorMessage = inFromServer.readLine();
@@ -106,17 +107,12 @@ class clientTCP {
 		errorMessage = inFromServer.readLine();
 		System.out.println("from server: " + errorMessage); 
 
-		
 		if (errorMessage.charAt(0) == '+') {
 			LIST();
 		}
 		else if (errorMessage.charAt(0) == '-') {
 			TYPE();
 		}		
-	}	
-
-	public void processContinuousInputFromServer(String errorMessage) {
-		System.out.println("from server: " + errorMessage);
 	}	
 	
 	public void LIST() throws Exception {
@@ -130,14 +126,17 @@ class clientTCP {
 		errorMessage = inFromServer.readLine();
 		
 		if (errorMessage.charAt(0) == '+') {
-			processContinuousInputFromServer(errorMessage);
-			//CDIR();
+			System.out.println(errorMessage);
+			clientSocket.close();
+			
 		}
 		else if (errorMessage.charAt(0) == '-') {
 			LIST();
 		}
 		else {
-			System.out.println("from server: " + errorMessage); 
+			//incomingData = false;
+			System.out.println("broken");
+			//CDIR();
 		}
 	}		
 	
