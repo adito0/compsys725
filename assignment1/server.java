@@ -435,22 +435,17 @@ class serverTCP {
 		System.out.println("KILL() called");
 		String filename = args;
 		
-//			if (filename.contains("^[<>|:&]+$")) {
-//				errorMessage = "-Not deleted because filename contains reserved symbols");
-//			}
-		
 		Path path = new File(currentDirectory.toString().concat("/").concat(filename)).toPath();
 		
-		// Delete the file
 		try {
 			Files.delete(path);
 			errorMessage = String.format("+%s deleted", filename);
 			
 		} catch (NoSuchFileException x) {
-		    errorMessage = "-Not deleted because no such file exists in the directory";
+		    errorMessage = "-no such file exist in the directory";
 		    
 		} catch (IOException x) {
-		    errorMessage = "-Not deleted because it's protected";
+		    errorMessage = "-file is proteccc";
 		}
 		outToClient.writeBytes(errorMessage + "\0");
 	}
