@@ -220,11 +220,13 @@ class serverTCP {
 		else {
 			if (loggedInUsers.contains(currentUser)) {
 				errorMessage = "!" + currentUser + " logged in";
+				System.out.println("line223");
 				userLoggedIn = true;
 			}
 			else {
 				if (currentUser.equalsIgnoreCase("admin")) {
 					errorMessage = "!" + currentUser + " logged in";
+					System.out.println("line228");
 					loggedInUsers.add(currentUser);
 					userLoggedIn = true;
 				}
@@ -326,119 +328,108 @@ class serverTCP {
 		}		
 		File files[] = path.listFiles();	
 		
-		try {
-			if ((listingFormat.equalsIgnoreCase("v")) || (listingFormat.equalsIgnoreCase("f"))) {
-				errorMessage = "-invalid file listing format";
-			}
-		}
-		catch (StringIndexOutOfBoundsException e) {
-			errorMessage = "-invalid file listing format";
-		}
+		String outputList = "";
+		if ((listingFormat.equalsIgnoreCase("v")) || (listingFormat.equalsIgnoreCase("f"))) {
+			//System.out.println("path: " + path);		
+			outputList = "+" + path + "\n./\n../\n"; 
+			// Go through each file in the directory
+			for (File f : files) {
+				String filename = f.getName();
 
-
-		//System.out.println("path: " + path);		
-		String outputList = "+" + path + "\n./\n../\n"; 
-		// Go through each file in the directory
-		for (File f : files) {
-			String filename = f.getName();
-
-			// Append / to directories
-			if (f.isDirectory()) {
-				filename = filename.concat("/");
-			}
-
-			// Verbose, get information on the file
-			if (listingFormat.equalsIgnoreCase("v"))  {
-				long modifiedTime = f.lastModified();
-				String modifiedDate = dateFormat.format(new Date(modifiedTime));
-				String size = String.valueOf(f.length());
-				String owner = "";
-
-				// Get file owner's name
-				try {
-					 FileOwnerAttributeView attr = Files.getFileAttributeView(f.toPath(), FileOwnerAttributeView.class);
-					 owner = attr.getOwner().getName();
-				} catch (IOException e) {	
-					e.printStackTrace();
+				// Append / to directories
+				if (f.isDirectory()) {
+					filename = filename.concat("/");
 				}
 
-				// print structure:   filename   modified time    size    owner
-				outputList = outputList.concat(String.format("%-30s %-20s %10s %20s \r\n", filename, modifiedDate, size, owner));
+				// Verbose, get information on the file
+				if (listingFormat.equalsIgnoreCase("v"))  {
+					long modifiedTime = f.lastModified();
+					String modifiedDate = dateFormat.format(new Date(modifiedTime));
+					String size = String.valueOf(f.length());
+					String owner = "";
 
-			// Non verbose, filename only
-			} else {
-				outputList = outputList.concat(String.format("%s \r\n", filename));
+					// Get file owner's name
+					try {
+						 FileOwnerAttributeView attr = Files.getFileAttributeView(f.toPath(), FileOwnerAttributeView.class);
+						 owner = attr.getOwner().getName();
+					} catch (IOException e) {	
+						e.printStackTrace();
+					}
+
+					// print structure:   filename   modified time    size    owner
+					outputList = outputList.concat(String.format("%-30s %-20s %10s %20s \r\n", filename, modifiedDate, size, owner));
+
+				// Non verbose, filename only
+				} else {
+					outputList = outputList.concat(String.format("%s \r\n", filename));
+				}
 			}
 		}
+		else {
+			outputList = "-invalid file listing format";
+		}
+
 		outToClient.writeBytes(outputList + "\0");
 	}
 
 	public void CDIR() throws Exception {
 		System.out.println("CDIR() called");
-		
-		String newDirName = "";		
+		String newDirectoryString = "";		
 		int strlen = args.length();
 		try {
-			newDirName = args.substring(0,strlen);
+			newDirectoryString = args.substring(0,strlen);
 		}
 		catch (StringIndexOutOfBoundsException e) {
 			errorMessage = "-cant't connect to directory because it doesn't exist";
-		}
-		System.out.println("newDirName: " + newDirName);
-		
+		}		
 		// Directory is relative to root, set current dir to default, then append requested dir
-		if (newDirName.charAt(0) == '~') {
-			newDirName = newDirName.replaceAll("~", "/");
+		if (newDirectoryString.charAt(0) == '~') {
+			newDirectoryString = newDirectoryString.replaceAll("~", "/");
 			currentDirectory = defaultDirectory;
 		}
 		
-		System.out.println("juan");
-		
 		// Add / for directory
-		if (newDirName.charAt(0) != '/') {
-			newDirName = String.format("/%s", newDirName);
+		if (newDirectoryString.charAt(0) != '/') {
+			newDirectoryString = String.format("/%s", newDirectoryString);
 		}
-		System.out.println("two");
 		
-		if (newDirName.charAt(newDirName.length()-1) != '/') {
-			newDirName = newDirName.concat("/");
+		if (newDirectoryString.charAt(newDirectoryString.length()-1) != '/') {
+			newDirectoryString = newDirectoryString.concat("/");
 		}
-		System.out.println("three");
-		File newDir = new File(currentDirectory.toString().concat(newDirName)).toPath().normalize().toFile();
-		System.out.println("four");
-		System.out.println(newDir);
-		System.out.println("five");
-		// Client trying access folder above allocated "root" folder.
-		if (newDir.compareTo(defaultDirectory.getAbsoluteFile()) < 0){
-			outToClient.writeBytes("-Can't connect to directory because permission denied");
-		}
-		System.out.println("six");
-		// Specified directory is not a directory
+
+		File newDir = new File(currentDirectory.toString().concat(newDirectoryString)).toPath().normalize().toFile();
+		System.out.println("1");
+		//check if it is a valid directory
 		if (!newDir.isDirectory()) {
-			outToClient.writeBytes("-Can't connect to directory because no such directory exists");
+			errorMessage = ("-Can't connect to directory because no such directory exists");
+			System.out.println(newDir);
 		}
-		System.out.println("seven");
-		// Replace portion of the path to ~
-		// Client doesn't need to know the absolute directory on the server
-		String newDirReply = String.format("~%s", newDir.toString().substring(defaultDirectory.toString().length()));
-		System.out.println("eight");
-		// Already logged in
-		if ((loggedInUsers.contains(currentUser))) {
-			currentDirectory = newDir;
-			errorMessage = String.format("!Changed working dir to %s", newDirReply);
-			outToClient.writeBytes(errorMessage + "\0");
-			System.out.println("nine");
-		// Need to log in
-		} else {
-			outToClient.writeBytes(String.format("+directory ok, send account/password", newDir));
-			System.out.println("ten");
-			// Run CDIR authentication procedure
-			/**if (cdirAuthenticate()) {
-				currentDirectory = newDir;
-				outToClient.writeBytes(String.format("!Changed working dir to %s", newDirReply));
-			}**/
+		else {
+			// Client trying access folder above allocated "root" folder.
+			if (newDir.compareTo(defaultDirectory.getAbsoluteFile()) < 0){
+				errorMessage = ("-Can't connect to directory because permission denied");
+			}
+			else {
+				// Replace portion of the path to ~
+				// Client doesn't need to know the absolute directory on the server
+				String newDirReply = String.format("~%s", newDir.toString().substring(defaultDirectory.toString().length()));
+				// Already logged in
+				if ((loggedInUsers.contains(currentUser))) {
+					errorMessage = (String.format("!Changed working dir to %s", newDirReply));
+					currentDirectory = newDir;
+				} else {
+					errorMessage = String.format("+directory ok, send account/password", newDir);
+					// Run CDIR authentication procedure
+					/**if (cdirAuthenticate()) {
+						currentDirectory = newDir;
+						outToClient.writeBytes(String.format("!Changed working dir to %s", newDirReply));
+					}**/
+				}			
+			}
+		
 		}
-	}	
+		outToClient.writeBytes(errorMessage + "\0");
+	}
 
 	public void KILL() throws Exception {
 		System.out.println("KILL() called");
