@@ -26,7 +26,6 @@ class serverTCP {
 	
 	public static ArrayList<String> loggedInUsers;
 	
-	
 	public static String errorMessage = "! unidentified error";
 	public static boolean userLoggedIn = false;
 	public static boolean accountLoggedIn = false;
@@ -92,7 +91,7 @@ class serverTCP {
 		cmd = "";
 		args = "";
 		command = readMessage();
-		
+	
 		if (command != null) {
 			try {
 				String[] parts = command.split("\\ ",2);
@@ -189,8 +188,8 @@ class serverTCP {
 
 			sb.append(line);
 			sb.append(System.lineSeparator());
-
 			line = br.readLine();
+			
 			if (line != null) {
 				parts0 = line.split("\\[",2);
 				currentUser = parts0[0];
@@ -218,14 +217,13 @@ class serverTCP {
 			errorMessage = "-invalid user id, try again";
 		}
 		else {
-			if (loggedInUsers.contains(currentUser)) {
+			if (userLoggedIn) {
 				errorMessage = "!" + currentUser + " logged in";
 				userLoggedIn = true;
 			}
 			else {
 				if (currentUser.equalsIgnoreCase("admin")) {
 					errorMessage = "!" + currentUser + " logged in";
-					loggedInUsers.add(currentUser);
 					userLoggedIn = true;
 				}
 				else {
@@ -240,14 +238,16 @@ class serverTCP {
 	public void ACCT() throws Exception {
 		System.out.println("ACCT() called"); 
 		
-		if ((currentUser.equalsIgnoreCase("admin")) || (loggedInUsers.contains(currentUser))) {
+		if ((currentUser.equalsIgnoreCase("admin")) || (userLoggedIn)) {
 			accountSpecified = true;
 			errorMessage = "!account was not needed. skip the password";
+			userLoggedIn = true;
 		}
 		else if (args.equalsIgnoreCase(currentAccount)) {
 			accountSpecified = true;
 			if (skipPassword) {
 				errorMessage = "!account ok. skip the password";
+				userLoggedIn = true;
 			}
 			else {
 				errorMessage = "+account valid, send password";
@@ -267,9 +267,10 @@ class serverTCP {
 	public void PASS() throws Exception {
 		System.out.println("PASS() called");
 		
-		if ((currentUser.equalsIgnoreCase("admin")) || (loggedInUsers.contains(currentUser)) || (args.equalsIgnoreCase(currentPassword))) {
+		if ((currentUser.equalsIgnoreCase("admin")) || (userLoggedIn) || (args.equalsIgnoreCase(currentPassword))) {
 			if (accountSpecified) {
 				errorMessage = "!logged in";
+				userLoggedIn = true;
 			}
 			else {
 				skipPassword = true;
@@ -416,7 +417,7 @@ class serverTCP {
 				// Client doesn't need to know the absolute directory on the server
 				String newDirReply = String.format("~%s", newDir.toString().substring(defaultDirectory.toString().length()));
 				// Already logged in
-				if ((loggedInUsers.contains(currentUser))) {
+				if (userLoggedIn) {
 					errorMessage = (String.format("!Changed working dir to %s", newDirReply));
 					currentDirectory = newDir;
 				} else {
@@ -498,8 +499,7 @@ class serverTCP {
 	
 	public void RETR() throws Exception {
 		System.out.println("RETR() called");
-		
-		/*		step 0:	Check file validity	*/
+
 		
 		String filename = args;
 		
@@ -511,13 +511,14 @@ class serverTCP {
 		if (!file.isFile()) {
 			errorMessage = ("-File doesn't exist");
 		}
+		else {
+			/*		step 1:	send file size	*/
+			// Get file size
+			long fileSize = file.length();
+			errorMessage = (String.format(" %s", String.valueOf(fileSize)));	
+		}
 		outToClient.writeBytes(errorMessage + "\0");
 		
-		/*		step 1:	send file size	*/
-		// Get file size
-		long fileSize = file.length();
-		errorMessage = (String.format(" %s", String.valueOf(fileSize)));
-
 		if (SEND()) {
 			/*		step 2:	send file		*/
 			sendFile(file);
@@ -549,12 +550,8 @@ class serverTCP {
 	
 	public boolean SEND() throws Exception {
 		System.out.println("SEND() called");
-		command = readMessage();
-		if (command != null) {
-			String[] parts = command.split("\\ ",2);
-			cmd = parts[0];
-			args = parts[1];	
-		}
+		cmd = readMessage();
+		
 		if (cmd.equalsIgnoreCase("SEND")) {
 			return true;
 		}	
@@ -622,6 +619,7 @@ class serverTCP {
 		
 		// Specified file
 		File file = new File(currentDirectory.toString() + "/" + filename);
+		System.out.println(file);
 		System.out.println("File to be written = " + file.toPath().toAbsolutePath().toString());
 
 		boolean overwrite = false;
@@ -630,20 +628,24 @@ class serverTCP {
 			if (file.isFile()) {
 				errorMessage = "-File exists, but system doesn't support generations";
 			}
-			errorMessage = "+File does not exist, will create new file";
+			else {
+				errorMessage = "+File does not exist, will create new file";
+			}
 		}
 		else if (mode.equalsIgnoreCase("OLD")) {
 			if (file.isFile()) {
 				errorMessage = "+Will write over old file";
 				overwrite = true;
-			} else {
+			} 
+			else {
 				errorMessage = "+Will create new file";
 			}
 		}
 		else if (mode.equalsIgnoreCase("APP")) {
 			if (file.isFile()) {
 				errorMessage = "+Will append to file";
-			} else {
+			} 
+			else {
 				errorMessage = "+Will create file";
 			}		
 		}
@@ -656,6 +658,7 @@ class serverTCP {
 		
 		/*		step 2: Check file size	*/
 		if (SIZE()) {
+			System.out.println("1");
 			long fileSize = Long.parseLong(args);
 		
 			// File doesn't fit on server
@@ -663,18 +666,22 @@ class serverTCP {
 				if (!diskSpaceSufficient(fileSize)) {
 					errorMessage = "-Not enough room, don't send it";
 				}
+				else {
+					errorMessage = "+ok, waiting for file";
+				}
 
 			} catch (IOException e) {
 				errorMessage = "-Error reading free space, don't send it";
 			}
 
-			errorMessage = "+ok, waiting for file";
+			outToClient.writeBytes(errorMessage + "\0");
 
 			/*		step 3: receive file	*/
 
 			// Receive the file
 			try {
 				receiveFile(file, fileSize, overwrite);
+				errorMessage = String.format("+Saved %s", filename);
 			} catch (IOException e) {
 				e.printStackTrace();
 				errorMessage = "-Couldn't save because write access permissions";
@@ -683,9 +690,7 @@ class serverTCP {
 		else {
 			errorMessage = "-Invalid argument";
 		}
-		
-
-		errorMessage = String.format("+Saved %s", filename);
+		outToClient.writeBytes(errorMessage + "\0");
 	}	
 
 	public void receiveFile(File file, long fileSize, boolean overwrite) throws IOException {
@@ -719,7 +724,6 @@ class serverTCP {
 
 	public boolean diskSpaceSufficient(long fileSize) throws IOException {
 		long freeSpace = Files.getFileStore(currentDirectory.toPath().toRealPath()).getUsableSpace();
-		
 		if (fileSize < freeSpace) {
 			return true;
 		}
@@ -732,8 +736,6 @@ class serverTCP {
 		
 		//create new instance of serverTCP
 		serverTCP server = new serverTCP();
-		loggedInUsers = new ArrayList<String>();
-	
 		//setup of welcoming socket
 		welcomeSocket = new ServerSocket(1500); 
 		server.acceptConnection();
