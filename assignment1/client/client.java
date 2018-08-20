@@ -5,6 +5,8 @@
 
 import java.io.*; 
 import java.net.*;
+import java.nio.file.*;
+import java.nio.file.attribute.*;
 
 class clientTCP { 
    
@@ -15,12 +17,16 @@ class clientTCP {
 	public static Socket clientSocket;
 	public static DataOutputStream outToServer;
 	public static BufferedReader inFromServer;
+	public static DataOutputStream fileOutToServer; 
+	private static final File defaultDirectory = FileSystems.getDefault().getPath("").toFile().getAbsoluteFile();
+	private File currentDirectory = defaultDirectory;
 	
 	public void attemptConnection() throws Exception {
 		inFromUser = new BufferedReader(new InputStreamReader(System.in)); 
 		clientSocket = new Socket("localhost", 1500); 
 		outToServer = new DataOutputStream(clientSocket.getOutputStream()); 
 		inFromServer = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
+		fileOutToServer = new DataOutputStream(clientSocket.getOutputStream());
 		fetchServerResponse();
 		
 		if (errorMessage.charAt(0) == '+') {
@@ -68,8 +74,44 @@ class clientTCP {
 
 	public void fetchServerResponse() throws Exception {
 		errorMessage = readServerResponse();
-		System.out.println("from server: " + errorMessage); 	
+		System.out.println("from server: " + errorMessage); 
+		if (errorMessage.charAt(0) == 'f') {
+			System.out.println("enter filename to be sent to the server: ");
+			command = inFromUser.readLine();
+			File file = new File(currentDirectory.toString() + "/" + command);
+			sendFile(file);
+			fetchServerResponse();
+		}
 	}
+
+	public boolean sendFile(File file) {
+		System.out.println("sendFile() called");
+		byte[] bytes = new byte[(int) file.length()];
+
+		try {
+			FileInputStream fis = new FileInputStream(file);
+			BufferedInputStream bufferedInStream = new BufferedInputStream(new FileInputStream(file));
+			
+			System.out.println("Total file size to read (in bytes) : " + fis.available());
+
+			int content = 0;
+			
+			// Read and send file until the whole file has been sent
+			while ((content = bufferedInStream.read(bytes)) >= 0) {
+				fileOutToServer.write(bytes, 0, content);
+			}
+			
+			bufferedInStream.close();
+			fis.close();
+			fileOutToServer.flush();
+	
+		} catch (FileNotFoundException e) {
+			return false;
+		} catch (IOException e) {
+			return false;
+		}
+		return true;
+	}		
 	
     public static void main(String argv[]) throws Exception 
     { 

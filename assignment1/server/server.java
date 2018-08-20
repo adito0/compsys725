@@ -41,7 +41,6 @@ class serverTCP {
 	public static DataOutputStream outToClient;
 	public static DataOutputStream dataOutToClient; 
 	public static BufferedInputStream dataInFromClient;
-	
 	private static final File defaultDirectory = FileSystems.getDefault().getPath("").toFile().getAbsoluteFile();
 	private File currentDirectory = defaultDirectory;
 	
@@ -156,7 +155,12 @@ class serverTCP {
 					}
 				}
 				else {
-					errorMessage = "-you are not logged in. please do so";
+					if ((cmd.equalsIgnoreCase("TYPE")) || (cmd.equalsIgnoreCase("LIST")) || (cmd.equalsIgnoreCase("CDIR")) || (cmd.equalsIgnoreCase("KILL")) || (cmd.equalsIgnoreCase("NAME")) || (cmd.equalsIgnoreCase("DONE")) || (cmd.equalsIgnoreCase("RETR")) || (cmd.equalsIgnoreCase("STOR")) ||  (cmd.equalsIgnoreCase("TOBE")) || (cmd.equalsIgnoreCase("SEND")) || (cmd.equalsIgnoreCase("STOP")) ){
+						errorMessage = "-you are not logged in. please do so";
+					}
+					else {
+						errorMessage = "-invalid command, pls try again";
+					}
 					outToClient.writeBytes(errorMessage + "\0");
 					checkValidCommand();					
 				}
@@ -166,8 +170,7 @@ class serverTCP {
 			System.out.println("client has disconnected..."); 
 			acceptConnection();
 			checkValidCommand();
-		}
-				
+		}	
 	}
 
 	public void readFile(String fileName, String args) throws Exception {
@@ -658,7 +661,7 @@ class serverTCP {
 		
 		/*		step 2: Check file size	*/
 		if (SIZE()) {
-			System.out.println("1");
+			
 			long fileSize = Long.parseLong(args);
 		
 			// File doesn't fit on server
@@ -667,7 +670,7 @@ class serverTCP {
 					errorMessage = "-Not enough room, don't send it";
 				}
 				else {
-					errorMessage = "+ok, waiting for file";
+					errorMessage = "f+ok, waiting for file";
 				}
 
 			} catch (IOException e) {
@@ -680,6 +683,7 @@ class serverTCP {
 
 			// Receive the file
 			try {
+				System.out.println("1");
 				receiveFile(file, fileSize, overwrite);
 				errorMessage = String.format("+Saved %s", filename);
 			} catch (IOException e) {
@@ -694,6 +698,7 @@ class serverTCP {
 	}	
 
 	public void receiveFile(File file, long fileSize, boolean overwrite) throws IOException {
+		System.out.println("receiveFile() called");
 		FileOutputStream fileOutStream = new FileOutputStream(file, overwrite);
 		BufferedOutputStream bufferedOutStream = new BufferedOutputStream(fileOutStream);
 
