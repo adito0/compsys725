@@ -220,13 +220,11 @@ class serverTCP {
 		else {
 			if (loggedInUsers.contains(currentUser)) {
 				errorMessage = "!" + currentUser + " logged in";
-				System.out.println("line223");
 				userLoggedIn = true;
 			}
 			else {
 				if (currentUser.equalsIgnoreCase("admin")) {
 					errorMessage = "!" + currentUser + " logged in";
-					System.out.println("line228");
 					loggedInUsers.add(currentUser);
 					userLoggedIn = true;
 				}
@@ -317,9 +315,13 @@ class serverTCP {
 		try {
 			String[] parts = args.split("\\ ",2);
 			listingFormat = parts[0];
-			dir = parts[1];	
-			
-			path = new File(defaultDirectory.toString() + "/" + dir);			
+			dir = parts[1];
+			if (dir == "") {
+				path = currentDirectory;
+			}
+			else {
+				path = new File(defaultDirectory.toString() + "/" + dir);	
+			}
 		}
 		catch (ArrayIndexOutOfBoundsException e) { 
 			listingFormat = args;
@@ -451,7 +453,7 @@ class serverTCP {
 	}
 	
 	public void NAME() throws Exception {
-		System.out.println("KILL() called");
+		System.out.println("NAME() called");
 		
 		String oldFilename = args;
 		File oldFile = new File(currentDirectory.toString() + "/" + oldFilename);
@@ -460,31 +462,29 @@ class serverTCP {
 		if (!oldFile.isFile()) {
 			errorMessage = String.format("-Can't find %s", oldFilename);
 		}
-		
-		errorMessage = String.format("+File exists");
-		
-		
-		// Wait for TOBE command
-		if (TOBE()) {
-			String newargs = args;
-			// Get new filename from argument
-			String newFilename = newargs.substring(5, newargs.length());
-			File newFile = new File(currentDirectory.toString() + "/" + newFilename);
-
-			// Check if the new filename is already taken
-			if (newFile.exists()) {
-				errorMessage = String.format("-File wasn't renamed because new file name already exists");
-			}
-
-			// Rename
-			if (oldFile.renameTo(newFile)) {
-				errorMessage = String.format("+%s renamed to %s", oldFilename, newFilename);
-			} else {
-				errorMessage = String.format("-File wasn't renamed because it's protected");
-			}
-		}
 		else {
-			errorMessage = String.format("-File wasn't renamed because command was not \"TOBE\"");
+			errorMessage = String.format("+File exists");
+			outToClient.writeBytes(errorMessage + "\0");	
+			// Wait for TOBE command
+			if (TOBE()) {
+				String newFilename = args;
+				File newFile = new File(currentDirectory.toString() + "/" + newFilename);
+
+				// Check if the new filename is already taken
+				if (newFile.exists()) {
+					errorMessage = String.format("-File wasn't renamed because new file name already exists");
+				}
+
+				// Rename
+				if (oldFile.renameTo(newFile)) {
+					errorMessage = String.format("+%s renamed to %s", oldFilename, newFilename);
+				} else {
+					errorMessage = String.format("-File wasn't renamed because it's protected");
+				}
+			}
+			else {
+				errorMessage = String.format("-File wasn't renamed because command was not \"TOBE\"");
+			}		
 		}
 		outToClient.writeBytes(errorMessage + "\0");			
 	}	
