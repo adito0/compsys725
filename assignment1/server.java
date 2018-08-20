@@ -54,27 +54,58 @@ class serverTCP {
 		dataOutToClient = new DataOutputStream(connectionSocket.getOutputStream());
 		dataInFromClient = new BufferedInputStream(connectionSocket.getInputStream());
 		if (outToLunch == true) {
-			outToClient.writeBytes("-CS725 SFTP Service\n");
+			errorMessage = "-CS725 SFTP Service";
+			outToClient.writeBytes(errorMessage + "\0");
 			connectionSocket.close();
 		}
 		else {
-			outToClient.writeBytes("+CS725 SFTP Service\n");	
+			errorMessage = "+CS725 SFTP Service";
+			outToClient.writeBytes(errorMessage + "\0");		
 			System.out.println("a client is connected..."); 
 		}
 	}
+
+	public String readMessage() {
+		String sentence = "";
+		int character = 0;
+
+		while (true){
+			try {
+				character = inFromClient.read();
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
+
+			// '\0' detected, return sentence.
+			if (character == 0) {
+				break;
+			}
+
+			// Concatenate char into sentence.
+			sentence = sentence.concat(Character.toString((char)character));
+		}
+
+		return sentence;
+	}
 	
 	public void checkValidCommand() throws Exception {
-
-		command = inFromClient.readLine();
+		cmd = "";
+		args = "";
+		command = readMessage();
 		
 		if (command != null) {
-			//TODO: remove the square brackets loool
-			String[] parts = command.split("\\[ ",2);
-			cmd = parts[0];
-			String a = parts[1];
-			String[] b = a.split("\\]",2);
-			args = b[0];
-
+			try {
+				String[] parts = command.split("\\ ",2);
+				cmd = parts[0];
+				args = parts[1];
+			}
+			catch (ArrayIndexOutOfBoundsException e) {
+				cmd = command;
+			}
+			
+			System.out.println("cmd: " + cmd);
+			System.out.println("args: " + args);	
+			
 			if (cmd.equalsIgnoreCase("USER")) {
 				USER();
 			}
@@ -84,39 +115,53 @@ class serverTCP {
 			else if (cmd.equalsIgnoreCase("PASS")) {
 				PASS();
 			}	
-			else if (cmd.equalsIgnoreCase("TYPE")) {
-				TYPE();
-			}	
-			else if (cmd.equalsIgnoreCase("LIST")) {
-				LIST();
-			}			
-			else if (cmd.equalsIgnoreCase("CDIR")) {
-				CDIR();
+			else {
+				if (userLoggedIn) {
+					if (cmd.equalsIgnoreCase("TYPE")) {
+						TYPE();
+					}	
+					else if (cmd.equalsIgnoreCase("LIST")) {
+						LIST();
+					}			
+					else if (cmd.equalsIgnoreCase("CDIR")) {
+						CDIR();
+					}
+					else if (cmd.equalsIgnoreCase("KILL")) {
+						KILL();
+					}
+					else if (cmd.equalsIgnoreCase("NAME")) {
+						NAME();
+					}	
+					else if (cmd.equalsIgnoreCase("DONE")) {
+						DONE();
+					}	
+					else if (cmd.equalsIgnoreCase("RETR")) {
+						RETR();
+					}		
+					else if (cmd.equalsIgnoreCase("STOR")) {
+						STOR();
+					}		
+					else if (cmd.equalsIgnoreCase("TOBE")) {
+						TOBE();
+					}		
+					else if (cmd.equalsIgnoreCase("SEND")) {
+						SEND();
+					}		
+					else if (cmd.equalsIgnoreCase("STOP")) {
+						STOP();
+					}
+					else {
+						errorMessage = "-invalid command, pls try again";
+						outToClient.writeBytes(errorMessage + "\0");
+						checkValidCommand();
+					}
+				}
+				else {
+					errorMessage = "-you are not logged in. please do so";
+					outToClient.writeBytes(errorMessage + "\0");
+					checkValidCommand();					
+				}
 			}
-			else if (cmd.equalsIgnoreCase("KILL")) {
-				KILL();
-			}
-			else if (cmd.equalsIgnoreCase("NAME")) {
-				NAME();
-			}	
-			else if (cmd.equalsIgnoreCase("DONE")) {
-				DONE();
-			}	
-			else if (cmd.equalsIgnoreCase("RETR")) {
-				RETR();
-			}		
-			else if (cmd.equalsIgnoreCase("STOR")) {
-				STOR();
-			}		
-			else if (cmd.equalsIgnoreCase("TOBE")) {
-				TOBE();
-			}		
-			else if (cmd.equalsIgnoreCase("SEND")) {
-				SEND();
-			}		
-			else if (cmd.equalsIgnoreCase("STOP")) {
-				STOP();
-			}						
 		}
 		else {
 			System.out.println("client has disconnected..."); 
@@ -170,24 +215,26 @@ class serverTCP {
 		System.out.println("USER() called");
 		readFile("userList.txt",args);
 		if (existsInList == false) {
-			errorMessage = "-invalid user-id, try again";
+			errorMessage = "-invalid user id, try again";
 		}
 		else {
 			if (loggedInUsers.contains(currentUser)) {
 				errorMessage = "!" + currentUser + " logged in";
+				userLoggedIn = true;
 			}
 			else {
 				if (currentUser.equalsIgnoreCase("admin")) {
 					errorMessage = "!" + currentUser + " logged in";
 					loggedInUsers.add(currentUser);
+					userLoggedIn = true;
 				}
 				else {
-					errorMessage = "+user-id valid, send account and password";
+					errorMessage = "+user id valid, send account and password";
 				}	
 			}
 		
 		}
-		outToClient.writeBytes(errorMessage + "\n");		
+		outToClient.writeBytes(errorMessage + "\0");		
 	}
 	
 	public void ACCT() throws Exception {
@@ -214,7 +261,7 @@ class serverTCP {
 			errorMessage = "-invalid account, try again";
 		}
 
-		outToClient.writeBytes(errorMessage + "\n"); 
+		outToClient.writeBytes(errorMessage + "\0"); 
 	}
 
 	public void PASS() throws Exception {
@@ -233,7 +280,7 @@ class serverTCP {
 			errorMessage = "-wrong password, try again";
 		}
 
-		outToClient.writeBytes(errorMessage + "\n"); 
+		outToClient.writeBytes(errorMessage + "\0"); 
 	}	
 
 	public void TYPE() throws Exception {
@@ -254,34 +301,35 @@ class serverTCP {
 		else {
 			errorMessage = "-type not valid";
 		}
-		outToClient.writeBytes(errorMessage + "\n");
+		outToClient.writeBytes(errorMessage + "\0");
 	}
 	
 	public void LIST() throws Exception {
 		System.out.println("LIST() called");
 		int strlen = args.length();
-		char listingFormat = '\0';
-		String dir;
+		String listingFormat = "";
+		String dir = "";
 
 		SimpleDateFormat dateFormat = new SimpleDateFormat("dd/MM/yyyy kk:mm");
-		
+
 		try {
-			listingFormat = args.charAt(0);
-			if ((listingFormat != 'v') || (listingFormat != 'f')) {
+			String[] parts = args.split("\\ ",2);
+			listingFormat = parts[0];
+			dir = parts[1];	
+		}
+		catch (ArrayIndexOutOfBoundsException e) { 
+			listingFormat = args;
+		}		
+			
+		try {
+			if ((listingFormat.equalsIgnoreCase("v")) || (listingFormat.equalsIgnoreCase("f"))) {
 				errorMessage = "-invalid file listing format";
 			}
 		}
 		catch (StringIndexOutOfBoundsException e) {
 			errorMessage = "-invalid file listing format";
 		}
-		
-		try {
-			dir = args.substring(1,strlen);
-		}
-		catch (StringIndexOutOfBoundsException e) {
-			dir = "";
-		}
-		
+
 		File path = defaultDirectory;
 		path = new File(defaultDirectory.toString() + "/" + dir);
 		File files[] = path.listFiles();
@@ -290,14 +338,14 @@ class serverTCP {
 		// Go through each file in the directory
 		for (File f : files) {
 			String filename = f.getName();
-			
+
 			// Append / to directories
 			if (f.isDirectory()) {
 				filename = filename.concat("/");
 			}
-			
+
 			// Verbose, get information on the file
-			if (listingFormat == 'v') {
+			if (listingFormat.equalsIgnoreCase("v"))  {
 				long modifiedTime = f.lastModified();
 				String modifiedDate = dateFormat.format(new Date(modifiedTime));
 				String size = String.valueOf(f.length());
@@ -313,15 +361,13 @@ class serverTCP {
 
 				// print structure:   filename   modified time    size    owner
 				outputList = outputList.concat(String.format("%-30s %-20s %10s %20s \r\n", filename, modifiedDate, size, owner));
-			
+
 			// Non verbose, filename only
 			} else {
 				outputList = outputList.concat(String.format("%s \r\n", filename));
 			}
 		}
-		
 		outToClient.writeBytes(outputList + "\0");
-
 	}
 
 	public void CDIR() throws Exception {
@@ -404,7 +450,7 @@ class serverTCP {
 		} catch (IOException x) {
 		    errorMessage = "-Not deleted because it's protected";
 		}
-		outToClient.writeBytes(errorMessage + "\n");
+		outToClient.writeBytes(errorMessage + "\0");
 	}
 	
 	public void NAME() throws Exception {
@@ -443,13 +489,13 @@ class serverTCP {
 		else {
 			errorMessage = String.format("-File wasn't renamed because command was not \"TOBE\"");
 		}
-		outToClient.writeBytes(errorMessage + "\n");			
+		outToClient.writeBytes(errorMessage + "\0");			
 	}	
 	
 	public void DONE() throws Exception {
 		System.out.println("DONE() called");
 		errorMessage = "+bye";
-		outToClient.writeBytes(errorMessage + "\n");
+		outToClient.writeBytes(errorMessage + "\0");
 		connectionSocket.close();
 	}
 	
@@ -468,7 +514,7 @@ class serverTCP {
 		if (!file.isFile()) {
 			errorMessage = ("-File doesn't exist");
 		}
-		outToClient.writeBytes(errorMessage + "\n");
+		outToClient.writeBytes(errorMessage + "\0");
 		
 		/*		step 1:	send file size	*/
 		// Get file size
@@ -485,18 +531,16 @@ class serverTCP {
 		else {
 			errorMessage = ("-Invalid response");
 		}
-		outToClient.writeBytes(errorMessage + "\n");	
+		outToClient.writeBytes(errorMessage + "\0");	
 	}
 	
 	
 	public boolean TOBE() throws Exception {
-		command = inFromClient.readLine();
+		command = readMessage();
 		if (command != null) {
-			String[] parts = command.split("\\[ ",2);
+			String[] parts = command.split("\\ ",2);
 			cmd = parts[0];
-			String a = parts[1];
-			String[] b = a.split("\\]",2);
-			args = b[0];	
+			args = parts[1];	
 		}
 		if (cmd.equalsIgnoreCase("TOBE")) {
 			return true;
@@ -508,13 +552,11 @@ class serverTCP {
 	
 	public boolean SEND() throws Exception {
 		System.out.println("SEND() called");
-		command = inFromClient.readLine();
+		command = readMessage();
 		if (command != null) {
-			String[] parts = command.split("\\[ ",2);
+			String[] parts = command.split("\\ ",2);
 			cmd = parts[0];
-			String a = parts[1];
-			String[] b = a.split("\\]",2);
-			args = b[0];	
+			args = parts[1];	
 		}
 		if (cmd.equalsIgnoreCase("SEND")) {
 			return true;
@@ -526,13 +568,11 @@ class serverTCP {
 	
 	public boolean STOP() throws Exception {
 		System.out.println("STOP() called");
-		command = inFromClient.readLine();
+		command = readMessage();
 		if (command != null) {
-			String[] parts = command.split("\\[ ",2);
+			String[] parts = command.split("\\ ",2);
 			cmd = parts[0];
-			String a = parts[1];
-			String[] b = a.split("\\]",2);
-			args = b[0];	
+			args = parts[1];	
 		}
 		if (cmd.equalsIgnoreCase("STOP")) {
 			return true;
@@ -578,11 +618,9 @@ class serverTCP {
 		String filename = "";		
 		
 		if (args != null) {
-			String[] parts = args.split("\\[ ",2);
+			String[] parts = args.split("\\ ",2);
 			mode = parts[0];
-			String a = parts[1];
-			String[] b = a.split("\\]",2);
-			filename = b[0];	
+			filename = parts[1];
 		}
 		
 		// Specified file
@@ -616,7 +654,7 @@ class serverTCP {
 			errorMessage = "-Invalid mode";
 		}
 		
-		outToClient.writeBytes(errorMessage + "\n");
+		outToClient.writeBytes(errorMessage + "\0");
 		
 		
 		/*		step 2: Check file size	*/
@@ -668,13 +706,11 @@ class serverTCP {
 	
 	public boolean SIZE() throws Exception {
 		System.out.println("SIZE() called");
-		command = inFromClient.readLine();
+		command = readMessage();
 		if (command != null) {
-			String[] parts = command.split("\\[ ",2);
+			String[] parts = command.split("\\ ",2);
 			cmd = parts[0];
-			String a = parts[1];
-			String[] b = a.split("\\]",2);
-			args = b[0];	
+			args = parts[1];
 		}
 		if (cmd.equalsIgnoreCase("SIZE")) {
 			return true;
