@@ -40,6 +40,8 @@ class serverTCP {
 	public static Socket connectionSocket;
 	public static BufferedReader inFromClient;
 	public static DataOutputStream outToClient;
+	public static DataOutputStream dataOutToClient; 
+	public static BufferedInputStream dataInFromClient;
 	
 	private static final File defaultDirectory = FileSystems.getDefault().getPath("").toFile().getAbsoluteFile();
 	private File currentDirectory = defaultDirectory;
@@ -49,6 +51,8 @@ class serverTCP {
 		connectionSocket = welcomeSocket.accept();		
 		inFromClient = new BufferedReader(new InputStreamReader(connectionSocket.getInputStream())); 
 		outToClient = new DataOutputStream(connectionSocket.getOutputStream()); 
+		dataOutToClient = new DataOutputStream(connectionSocket.getOutputStream());
+		dataInFromClient = new BufferedInputStream(connectionSocket.getInputStream());
 		if (outToLunch == true) {
 			outToClient.writeBytes("-CS725 SFTP Service\n");
 			connectionSocket.close();
@@ -64,11 +68,12 @@ class serverTCP {
 		command = inFromClient.readLine();
 		
 		if (command != null) {
+			//TODO: remove the square brackets loool
 			String[] parts = command.split("\\[ ",2);
 			cmd = parts[0];
 			String a = parts[1];
-			String[] kentuts = a.split("\\]",2);
-			args = kentuts[0];
+			String[] b = a.split("\\]",2);
+			args = b[0];
 
 			if (cmd.equalsIgnoreCase("USER")) {
 				USER();
@@ -84,7 +89,34 @@ class serverTCP {
 			}	
 			else if (cmd.equalsIgnoreCase("LIST")) {
 				LIST();
-			}				
+			}			
+			else if (cmd.equalsIgnoreCase("CDIR")) {
+				CDIR();
+			}
+			else if (cmd.equalsIgnoreCase("KILL")) {
+				KILL();
+			}
+			else if (cmd.equalsIgnoreCase("NAME")) {
+				NAME();
+			}	
+			else if (cmd.equalsIgnoreCase("DONE")) {
+				DONE();
+			}	
+			else if (cmd.equalsIgnoreCase("RETR")) {
+				RETR();
+			}		
+			else if (cmd.equalsIgnoreCase("STOR")) {
+				STOR();
+			}		
+			else if (cmd.equalsIgnoreCase("TOBE")) {
+				TOBE();
+			}		
+			else if (cmd.equalsIgnoreCase("SEND")) {
+				SEND();
+			}		
+			else if (cmd.equalsIgnoreCase("STOP")) {
+				STOP();
+			}						
 		}
 		else {
 			System.out.println("client has disconnected..."); 
@@ -350,12 +382,324 @@ class serverTCP {
 			}**/
 		}
 	}	
+
+	public void KILL() throws Exception {
+		System.out.println("KILL() called");
+		String filename = args;
+		
+//			if (filename.contains("^[<>|:&]+$")) {
+//				errorMessage = "-Not deleted because filename contains reserved symbols");
+//			}
+		
+		Path path = new File(currentDirectory.toString().concat("/").concat(filename)).toPath();
+		
+		// Delete the file
+		try {
+			Files.delete(path);
+			errorMessage = String.format("+%s deleted", filename);
+			
+		} catch (NoSuchFileException x) {
+		    errorMessage = "-Not deleted because no such file exists in the directory";
+		    
+		} catch (IOException x) {
+		    errorMessage = "-Not deleted because it's protected";
+		}
+		outToClient.writeBytes(errorMessage + "\n");
+	}
+	
+	public void NAME() throws Exception {
+		System.out.println("KILL() called");
+		
+		String oldFilename = args;
+		File oldFile = new File(currentDirectory.toString() + "/" + oldFilename);
+		
+		// Check if file exists
+		if (!oldFile.isFile()) {
+			errorMessage = String.format("-Can't find %s", oldFilename);
+		}
+		
+		errorMessage = String.format("+File exists");
+		
+		
+		// Wait for TOBE command
+		if (TOBE()) {
+			String newargs = args;
+			// Get new filename from argument
+			String newFilename = newargs.substring(5, newargs.length());
+			File newFile = new File(currentDirectory.toString() + "/" + newFilename);
+
+			// Check if the new filename is already taken
+			if (newFile.exists()) {
+				errorMessage = String.format("-File wasn't renamed because new file name already exists");
+			}
+
+			// Rename
+			if (oldFile.renameTo(newFile)) {
+				errorMessage = String.format("+%s renamed to %s", oldFilename, newFilename);
+			} else {
+				errorMessage = String.format("-File wasn't renamed because it's protected");
+			}
+		}
+		else {
+			errorMessage = String.format("-File wasn't renamed because command was not \"TOBE\"");
+		}
+		outToClient.writeBytes(errorMessage + "\n");			
+	}	
+	
+	public void DONE() throws Exception {
+		System.out.println("DONE() called");
+		errorMessage = "+bye";
+		outToClient.writeBytes(errorMessage + "\n");
+		connectionSocket.close();
+	}
+	
+	public void RETR() throws Exception {
+		System.out.println("RETR() called");
+		
+		/*		step 0:	Check file validity	*/
+		
+		String filename = args;
+		
+		// Specified file
+		File file = new File(currentDirectory.toString() + "/" + filename);
+		System.out.println("File of interest = " + file.toPath().toAbsolutePath().toString());
+		
+		// Specified file is not a file
+		if (!file.isFile()) {
+			errorMessage = ("-File doesn't exist");
+		}
+		outToClient.writeBytes(errorMessage + "\n");
+		
+		/*		step 1:	send file size	*/
+		// Get file size
+		long fileSize = file.length();
+		errorMessage = (String.format(" %s", String.valueOf(fileSize)));
+
+		if (SEND()) {
+			/*		step 2:	send file		*/
+			sendFile(file);
+		}
+		else if (STOP()) {
+			errorMessage = ("+ok, RETR aborted");
+		}
+		else {
+			errorMessage = ("-Invalid response");
+		}
+		outToClient.writeBytes(errorMessage + "\n");	
+	}
+	
+	
+	public boolean TOBE() throws Exception {
+		command = inFromClient.readLine();
+		if (command != null) {
+			String[] parts = command.split("\\[ ",2);
+			cmd = parts[0];
+			String a = parts[1];
+			String[] b = a.split("\\]",2);
+			args = b[0];	
+		}
+		if (cmd.equalsIgnoreCase("TOBE")) {
+			return true;
+		}	
+		else {
+			return false;
+		}
+	}
+	
+	public boolean SEND() throws Exception {
+		System.out.println("SEND() called");
+		command = inFromClient.readLine();
+		if (command != null) {
+			String[] parts = command.split("\\[ ",2);
+			cmd = parts[0];
+			String a = parts[1];
+			String[] b = a.split("\\]",2);
+			args = b[0];	
+		}
+		if (cmd.equalsIgnoreCase("SEND")) {
+			return true;
+		}	
+		else {
+			return false;
+		}	
+	}
+	
+	public boolean STOP() throws Exception {
+		System.out.println("STOP() called");
+		command = inFromClient.readLine();
+		if (command != null) {
+			String[] parts = command.split("\\[ ",2);
+			cmd = parts[0];
+			String a = parts[1];
+			String[] b = a.split("\\]",2);
+			args = b[0];	
+		}
+		if (cmd.equalsIgnoreCase("STOP")) {
+			return true;
+		}	
+		else {
+			return false;
+		}		
+	}	
+	
+	public boolean sendFile(File file) {
+		System.out.println("sendFile() called");
+		byte[] bytes = new byte[(int) file.length()];
+
+		try {
+			FileInputStream fis = new FileInputStream(file);
+			BufferedInputStream bufferedInStream = new BufferedInputStream(new FileInputStream(file));
+			
+			System.out.println("Total file size to read (in bytes) : " + fis.available());
+
+			int content = 0;
+			
+			// Read and send file until the whole file has been sent
+			while ((content = bufferedInStream.read(bytes)) >= 0) {
+				dataOutToClient.write(bytes, 0, content);
+			}
+			
+			bufferedInStream.close();
+			fis.close();
+			dataOutToClient.flush();
+	
+		} catch (FileNotFoundException e) {
+			return false;
+		} catch (IOException e) {
+			return false;
+		}
+		return true;
+	}	
+
+	public void STOR() throws Exception {
+		System.out.println("STOR() called");
+
+		String mode = "";
+		String filename = "";		
+		
+		if (args != null) {
+			String[] parts = args.split("\\[ ",2);
+			mode = parts[0];
+			String a = parts[1];
+			String[] b = a.split("\\]",2);
+			filename = b[0];	
+		}
+		
+		// Specified file
+		File file = new File(currentDirectory.toString() + "/" + filename);
+		System.out.println("File to be written = " + file.toPath().toAbsolutePath().toString());
+
+		boolean overwrite = false;
+		
+		if (mode.equalsIgnoreCase("NEW")) {
+			if (file.isFile()) {
+				errorMessage = "-File exists, but system doesn't support generations";
+			}
+			errorMessage = "+File does not exist, will create new file";
+		}
+		else if (mode.equalsIgnoreCase("OLD")) {
+			if (file.isFile()) {
+				errorMessage = "+Will write over old file";
+				overwrite = true;
+			} else {
+				errorMessage = "+Will create new file";
+			}
+		}
+		else if (mode.equalsIgnoreCase("APP")) {
+			if (file.isFile()) {
+				errorMessage = "+Will append to file";
+			} else {
+				errorMessage = "+Will create file";
+			}		
+		}
+		else {
+			errorMessage = "-Invalid mode";
+		}
+		
+		outToClient.writeBytes(errorMessage + "\n");
+		
+		
+		/*		step 2: Check file size	*/
+		if (SIZE()) {
+			long fileSize = Long.parseLong(args);
+		
+			// File doesn't fit on server
+			try {
+				if (!diskSpaceSufficient(fileSize)) {
+					errorMessage = "-Not enough room, don't send it";
+				}
+
+			} catch (IOException e) {
+				errorMessage = "-Error reading free space, don't send it";
+			}
+
+			errorMessage = "+ok, waiting for file";
+
+			/*		step 3: receive file	*/
+
+			// Receive the file
+			try {
+				receiveFile(file, fileSize, overwrite);
+			} catch (IOException e) {
+				e.printStackTrace();
+				errorMessage = "-Couldn't save because write access permissions";
+			}			
+		}
+		else {
+			errorMessage = "-Invalid argument";
+		}
+		
+
+		errorMessage = String.format("+Saved %s", filename);
+	}	
+
+	public void receiveFile(File file, long fileSize, boolean overwrite) throws IOException {
+		FileOutputStream fileOutStream = new FileOutputStream(file, overwrite);
+		BufferedOutputStream bufferedOutStream = new BufferedOutputStream(fileOutStream);
+
+		// Read and write for all bytes
+		for (int i = 0; i < fileSize; i++) {
+			bufferedOutStream.write(dataInFromClient.read());
+		}
+
+		bufferedOutStream.close();
+		fileOutStream.close();
+	}
+	
+	public boolean SIZE() throws Exception {
+		System.out.println("SIZE() called");
+		command = inFromClient.readLine();
+		if (command != null) {
+			String[] parts = command.split("\\[ ",2);
+			cmd = parts[0];
+			String a = parts[1];
+			String[] b = a.split("\\]",2);
+			args = b[0];	
+		}
+		if (cmd.equalsIgnoreCase("SIZE")) {
+			return true;
+		}	
+		else {
+			return false;
+		}		
+	}	
+
+	public boolean diskSpaceSufficient(long fileSize) throws IOException {
+		long freeSpace = Files.getFileStore(currentDirectory.toPath().toRealPath()).getUsableSpace();
+		
+		if (fileSize < freeSpace) {
+			return true;
+		}
+		else {
+			return false;
+		}		
+	}	
 	
     public static void main(String argv[]) throws Exception {
 		
 		//create new instance of serverTCP
 		serverTCP server = new serverTCP();
-		loggedInUsers = new ArrayList();
+		loggedInUsers = new ArrayList<String>();
 	
 		//setup of welcoming socket
 		welcomeSocket = new ServerSocket(1500); 

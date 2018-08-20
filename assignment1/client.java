@@ -171,7 +171,7 @@ class clientTCP {
 		System.out.println("from server: " + errorMessage); 
 
 		if (errorMessage.charAt(0) == '!') {
-			//KILL();
+			KILL();
 		}
 		else if (errorMessage.charAt(0) == '+') {
 			ACCT();
@@ -180,6 +180,12 @@ class clientTCP {
 			CDIR();
 		}		
 	}		
+	
+	public void KILL() throws Exception {
+
+		
+	}
+	
 	
     public static void main(String argv[]) throws Exception 
     { 
