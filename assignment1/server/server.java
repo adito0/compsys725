@@ -670,7 +670,7 @@ class serverTCP {
 					errorMessage = "-Not enough room, don't send it";
 				}
 				else {
-					errorMessage = "f+ok, waiting for file";
+					errorMessage = "+ok, waiting for file";
 				}
 
 			} catch (IOException e) {
