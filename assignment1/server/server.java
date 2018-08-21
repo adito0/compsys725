@@ -25,6 +25,8 @@ class serverTCP {
 	public static String currentUser;
 	public static String currentAccount;
 	public static String currentPassword;
+	public static String filename = "";
+	public static String dir = "";
 	
 	public static ArrayList<String> loggedInUsers;
 	
@@ -45,6 +47,7 @@ class serverTCP {
 	public static BufferedInputStream dataInFromClient;
 	private static final File defaultDirectory = FileSystems.getDefault().getPath("").toFile().getAbsoluteFile();
 	private File currentDirectory = defaultDirectory;
+	private File file;
 	
 	public void acceptConnection() throws Exception {
 		System.out.println("server is running..."); 
@@ -498,66 +501,74 @@ class serverTCP {
 	
 	public void RETR() throws Exception {
 		System.out.println("RETR() called");
-
-		
-		String filename = args;
-		
+		filename = args;
 		// Specified file
-		File file = new File(currentDirectory.toString() + "/" + filename);
-		System.out.println("File of interest = " + file.toPath().toAbsolutePath().toString());
+		file = new File(currentDirectory.toString() + "/" + filename);
 		
 		// Specified file is not a file
 		if (!file.isFile()) {
 			errorMessage = ("-File doesn't exist");
 		}
 		else {
+			System.out.println("File of interest = " + file.toPath().toAbsolutePath().toString());
 			/*		step 1:	send file size	*/
 			// Get file size
 			long fileSize = file.length();
-			errorMessage = (String.format(" %s", String.valueOf(fileSize)));	
+			errorMessage = (String.format("%s", String.valueOf(fileSize)));	
 		}
 		outToClient.writeBytes(errorMessage + "\0");
 		
 		if (SEND()) {
-			/*		step 2:	send file		*/
 			sendFile(file);
 		}
 		else if (STOP()) {
 			errorMessage = ("+ok, RETR aborted");
+			outToClient.writeBytes(errorMessage + "\0");
 		}
 		else {
 			errorMessage = ("-Invalid response");
+			outToClient.writeBytes(errorMessage + "\0");
 		}
-		outToClient.writeBytes(errorMessage + "\0");	
-	}
-	
-	
-	public boolean TOBE() throws Exception {
-		command = readMessage();
-		if (command != null) {
-			String[] parts = command.split("\\ ",2);
-			cmd = parts[0];
-			args = parts[1];	
-		}
-		if (cmd.equalsIgnoreCase("TOBE")) {
-			return true;
-		}	
-		else {
-			return false;
-		}
+			
 	}
 	
 	public boolean SEND() throws Exception {
 		System.out.println("SEND() called");
 		cmd = readMessage();
-		
+		System.out.println(cmd);		
 		if (cmd.equalsIgnoreCase("SEND")) {
 			return true;
 		}	
 		else {
 			return false;
 		}	
-	}
+	}	
+	
+	public void sendFile(File file) throws Exception {
+		System.out.println("sendFile() called");
+		byte[] bytes = new byte[(int) file.length()];
+
+		try {
+			FileInputStream fis = new FileInputStream(file);
+			BufferedInputStream bufferedInStream = new BufferedInputStream(new FileInputStream(file));
+
+			int content = 0;
+			
+			// Read and send file until the whole file has been sent
+			while ((content = bufferedInStream.read(bytes)) >= 0) {
+				dataOutToClient.write(bytes, 0, content);
+			}
+			
+			bufferedInStream.close();
+			fis.close();
+			dataOutToClient.flush();
+	
+		} catch (FileNotFoundException e) {
+			
+		} catch (IOException e) {
+			
+		}
+	}	
 	
 	public boolean STOP() throws Exception {
 		System.out.println("STOP() called");
@@ -573,36 +584,24 @@ class serverTCP {
 		else {
 			return false;
 		}		
-	}	
+	}
 	
-	public boolean sendFile(File file) {
-		System.out.println("sendFile() called");
-		byte[] bytes = new byte[(int) file.length()];
-
-		try {
-			FileInputStream fis = new FileInputStream(file);
-			BufferedInputStream bufferedInStream = new BufferedInputStream(new FileInputStream(file));
-			
-			System.out.println("Total file size to read (in bytes) : " + fis.available());
-
-			int content = 0;
-			
-			// Read and send file until the whole file has been sent
-			while ((content = bufferedInStream.read(bytes)) >= 0) {
-				dataOutToClient.write(bytes, 0, content);
-			}
-			
-			bufferedInStream.close();
-			fis.close();
-			dataOutToClient.flush();
-	
-		} catch (FileNotFoundException e) {
-			return false;
-		} catch (IOException e) {
+	public boolean TOBE() throws Exception {
+		command = readMessage();
+		if (command != null) {
+			String[] parts = command.split("\\ ",2);
+			cmd = parts[0];
+			args = parts[1];	
+		}
+		if (cmd.equalsIgnoreCase("TOBE")) {
+			System.out.println("True");
+			return true;
+		}	
+		else {
+			System.out.println("False");
 			return false;
 		}
-		return true;
-	}	
+	}
 
 	public void STOR() throws Exception {
 		System.out.println("STOR() called");
