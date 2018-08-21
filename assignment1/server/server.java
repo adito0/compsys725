@@ -327,7 +327,7 @@ class serverTCP {
 				path = currentDirectory;
 			}
 			else {
-				path = new File(defaultDirectory.toString() + "/" + dir);	
+				path = new File(currentDirectory.toString() + "/" + dir);	
 			}
 		}
 		catch (ArrayIndexOutOfBoundsException e) { 
