@@ -87,6 +87,10 @@ class clientTCP {
 				System.out.println("enter filename to be sent to the server: ");
 				cmd = inFromUser.readLine();
 				file = new File(currentDirectory.toString() + "/" + cmd);
+				FileInputStream fis = new FileInputStream(file);
+				BufferedInputStream bufferedInStream = new BufferedInputStream(new FileInputStream(file));
+				System.out.println("Total file size to read (in bytes) : " + fis.available());
+				fis.close();
 			}
 			System.out.println("cmd: " + cmd);
 			outToServer.writeBytes(command + "\0");
@@ -113,8 +117,7 @@ class clientTCP {
 		try {
 			FileInputStream fis = new FileInputStream(file);
 			BufferedInputStream bufferedInStream = new BufferedInputStream(new FileInputStream(file));
-			
-			System.out.println("Total file size to read (in bytes) : " + fis.available());
+			//System.out.println("Total file size to read (in bytes) : " + fis.available());
 
 			int content = 0;
 			
