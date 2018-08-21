@@ -10,18 +10,18 @@ import java.nio.file.attribute.*;
 
 class clientTCP { 
    
-	public static String command = "";
-	public static String cmd = "";
-	public static String errorMessage;
-	public static String filename = "";
-	public static long fileSize = 0;
+	private static String command = "";
+	private static String cmd = "";
+	private static String errorMessage;
+	private static String filename = "";
+	private static long fileSize = 0;
 	
-	public static BufferedReader inFromUser;
-	public static Socket clientSocket;
-	public static DataOutputStream outToServer;
-	public static BufferedReader inFromServer;
-	public static DataOutputStream fileOutToServer; 
-	public static BufferedInputStream fileInFromClient;
+	private static BufferedReader inFromUser;
+	private static Socket clientSocket;
+	private static DataOutputStream outToServer;
+	private static BufferedReader inFromServer;
+	private static DataOutputStream fileOutToServer; 
+	private static BufferedInputStream fileInFromClient;
 	private static final File defaultDirectory = FileSystems.getDefault().getPath("").toFile().getAbsoluteFile();
 	private File currentDirectory = defaultDirectory;
 	public static File file;

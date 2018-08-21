@@ -18,40 +18,41 @@ import java.text.SimpleDateFormat;
 class serverTCP { 
  
 	//variable declaration
-	public static String args;
-	public static String cmd;
-	public static String command; 
-	public static String fileType = "b"; 
-	public static String currentUser;
-	public static String currentAccount;
-	public static String currentPassword;
-	public static String filename = "";
-	public static String dir = "";
+	private static String args;
+	private static String cmd;
+	private static String command; 
+	private static String fileType = "b"; 
+	private static String currentUser;
+	private static String currentAccount;
+	private static String currentPassword;
+	private static String filename = "";
+	private static String dir = "";
+		
+	private static String errorMessage = "!unidentified error";
+	private static boolean userLoggedIn = false;
+	private static boolean accountLoggedIn = false;
+	private static boolean freeToConnect = true;
+	private static boolean outToLunch = false;
+	private static boolean existsInList = false;
+	private static boolean accountSpecified = false;
+	private static boolean skipPassword = false;
+	private static boolean isConnected = false;
 	
-	public static ArrayList<String> loggedInUsers;
-	
-	public static String errorMessage = "! unidentified error";
-	public static boolean userLoggedIn = false;
-	public static boolean accountLoggedIn = false;
-	public static boolean freeToConnect = true;
-	public static boolean outToLunch = false;
-	public static boolean existsInList = false;
-	public static boolean accountSpecified = false;
-	public static boolean skipPassword = false;
-	
-	public static ServerSocket welcomeSocket;
-	public static Socket connectionSocket;
-	public static BufferedReader inFromClient;
-	public static DataOutputStream outToClient;
-	public static DataOutputStream dataOutToClient; 
-	public static BufferedInputStream dataInFromClient;
+	private static ServerSocket welcomeSocket;
+	private static Socket connectionSocket;
+	private static BufferedReader inFromClient;
+	private static DataOutputStream outToClient;
+	private static DataOutputStream dataOutToClient; 
+	private static BufferedInputStream dataInFromClient;
 	private static final File defaultDirectory = FileSystems.getDefault().getPath("").toFile().getAbsoluteFile();
 	private File currentDirectory = defaultDirectory;
 	private File file;
 	
-	public void acceptConnection() throws Exception {
+	private void acceptConnection() throws Exception {
 		System.out.println("server is running..."); 
-		connectionSocket = welcomeSocket.accept();		
+		connectionSocket = welcomeSocket.accept();	
+		System.out.println("client is connected..."); 
+		isConnected = true;
 		inFromClient = new BufferedReader(new InputStreamReader(connectionSocket.getInputStream())); 
 		outToClient = new DataOutputStream(connectionSocket.getOutputStream()); 
 		dataOutToClient = new DataOutputStream(connectionSocket.getOutputStream());
@@ -68,7 +69,7 @@ class serverTCP {
 		}
 	}
 
-	public String readMessage() {
+	private String readClientResponse() {
 		String sentence = "";
 		int character = 0;
 
@@ -78,24 +79,20 @@ class serverTCP {
 			} catch (IOException e) {
 				e.printStackTrace();
 			}
-
-			// '\0' detected, return sentence.
 			if (character == 0) {
 				break;
 			}
-
 			// Concatenate char into sentence.
 			sentence = sentence.concat(Character.toString((char)character));
 		}
-
 		return sentence;
 	}
 	
-	public void checkValidCommand() throws Exception {
-		String[] yourArray = new String[] {"TYPE","LIST","CDIR","KILL","NAME","DONE","RETR","STOR","TOBE","SEND","STOP"};
+	private void checkValidCommand() throws Exception {
+		String[] validCommands = new String[] {"TYPE","LIST","CDIR","KILL","NAME","DONE","RETR","STOR","TOBE","SEND","STOP"};
 		cmd = "";
 		args = "";
-		command = readMessage();
+		command = readClientResponse();
 	
 		if (command != null) {
 			try {
@@ -161,7 +158,7 @@ class serverTCP {
 					}
 				}
 				else {
-					if (Arrays.asList(yourArray).contains(cmd)) {
+					if (Arrays.asList(validCommands).contains(cmd)) {
 						errorMessage = "-you are not logged in. please do so";
 					}
 					else {
@@ -179,7 +176,7 @@ class serverTCP {
 		}	
 	}
 
-	public void readFile(String fileName, String args) throws Exception {
+	private void readFile(String fileName, String args) throws Exception {
 		BufferedReader br = new BufferedReader(new FileReader(fileName));
 
 		StringBuilder sb = new StringBuilder();
@@ -222,7 +219,7 @@ class serverTCP {
  		br.close();		
 	}
 	
-	public void USER() throws Exception {
+	private void USER() throws Exception {
 		System.out.println("USER() called");
 		readFile("userList.txt",args);
 		if (existsInList == false) {
@@ -248,7 +245,7 @@ class serverTCP {
 		outToClient.writeBytes(errorMessage + "\0");		
 	}
 	
-	public void ACCT() throws Exception {
+	private void ACCT() throws Exception {
 		System.out.println("ACCT() called"); 
 		
 		if ((currentUser.equals("admin")) || (userLoggedIn)) {
@@ -279,7 +276,7 @@ class serverTCP {
 		outToClient.writeBytes(errorMessage + "\0"); 
 	}
 
-	public void PASS() throws Exception {
+	private void PASS() throws Exception {
 		System.out.println("PASS() called");
 		
 		if ((currentUser.equals("admin")) || (userLoggedIn) || (args.equals(currentPassword))) {
@@ -299,7 +296,7 @@ class serverTCP {
 		outToClient.writeBytes(errorMessage + "\0"); 
 	}	
 
-	public void TYPE() throws Exception {
+	private void TYPE() throws Exception {
 		System.out.println("TYPE() called");
 	
 		if (args.equalsIgnoreCase("a")) {
@@ -320,7 +317,7 @@ class serverTCP {
 		outToClient.writeBytes(errorMessage + "\0");
 	}
 	
-	public void LIST() throws Exception {
+	private void LIST() throws Exception {
 		System.out.println("LIST() called");
 		int strlen = args.length();
 		String listingFormat = "";
@@ -380,7 +377,7 @@ class serverTCP {
 		outToClient.writeBytes(outputList + "\0");
 	}
 
-	public void CDIR() throws Exception {
+	private void CDIR() throws Exception {
 		System.out.println("CDIR() called");
 		String newDirectoryString = "";		
 		int strlen = args.length();
@@ -436,7 +433,7 @@ class serverTCP {
 		outToClient.writeBytes(errorMessage + "\0");
 	}
 
-	public void KILL() throws Exception {
+	private void KILL() throws Exception {
 		System.out.println("KILL() called");
 		String filename = args;
 		
@@ -455,7 +452,7 @@ class serverTCP {
 		outToClient.writeBytes(errorMessage + "\0");
 	}
 	
-	public void NAME() throws Exception {
+	private void NAME() throws Exception {
 		System.out.println("NAME() called");
 		
 		String oldFilename = args;
@@ -492,14 +489,14 @@ class serverTCP {
 		outToClient.writeBytes(errorMessage + "\0");			
 	}	
 	
-	public void DONE() throws Exception {
+	private void DONE() throws Exception {
 		System.out.println("DONE() called");
 		errorMessage = "+bye";
 		outToClient.writeBytes(errorMessage + "\0");
 		connectionSocket.close();
 	}
 	
-	public void RETR() throws Exception {
+	private void RETR() throws Exception {
 		System.out.println("RETR() called");
 		filename = args;
 		// Specified file
@@ -532,9 +529,9 @@ class serverTCP {
 			
 	}
 	
-	public boolean SEND() throws Exception {
+	private boolean SEND() throws Exception {
 		System.out.println("SEND() called");
-		cmd = readMessage();
+		cmd = readClientResponse();
 		System.out.println(cmd);		
 		if (cmd.equalsIgnoreCase("SEND")) {
 			return true;
@@ -544,7 +541,7 @@ class serverTCP {
 		}	
 	}	
 	
-	public void sendFile(File file) throws Exception {
+	private void sendFile(File file) throws Exception {
 		System.out.println("sendFile() called");
 		byte[] bytes = new byte[(int) file.length()];
 
@@ -570,9 +567,9 @@ class serverTCP {
 		}
 	}	
 	
-	public boolean STOP() throws Exception {
+	private boolean STOP() throws Exception {
 		System.out.println("STOP() called");
-		command = readMessage();
+		command = readClientResponse();
 		if (command != null) {
 			String[] parts = command.split("\\ ",2);
 			cmd = parts[0];
@@ -586,8 +583,8 @@ class serverTCP {
 		}		
 	}
 	
-	public boolean TOBE() throws Exception {
-		command = readMessage();
+	private boolean TOBE() throws Exception {
+		command = readClientResponse();
 		if (command != null) {
 			String[] parts = command.split("\\ ",2);
 			cmd = parts[0];
@@ -603,7 +600,7 @@ class serverTCP {
 		}
 	}
 
-	public void STOR() throws Exception {
+	private void STOR() throws Exception {
 		System.out.println("STOR() called");
 
 		String mode = "";
@@ -692,7 +689,7 @@ class serverTCP {
 		outToClient.writeBytes(errorMessage + "\0");
 	}	
 
-	public void receiveFile(File file, long fileSize, boolean overwrite) throws IOException {
+	private void receiveFile(File file, long fileSize, boolean overwrite) throws IOException {
 		System.out.println("receiveFile() called");
 		FileOutputStream fileOutStream = new FileOutputStream(file, overwrite);
 		BufferedOutputStream bufferedOutStream = new BufferedOutputStream(fileOutStream);
@@ -706,9 +703,9 @@ class serverTCP {
 		fileOutStream.close();
 	}
 	
-	public boolean SIZE() throws Exception {
+	private boolean SIZE() throws Exception {
 		System.out.println("SIZE() called");
-		command = readMessage();
+		command = readClientResponse();
 		if (command != null) {
 			String[] parts = command.split("\\ ",2);
 			cmd = parts[0];
@@ -722,7 +719,7 @@ class serverTCP {
 		}		
 	}	
 
-	public boolean diskSpaceSufficient(long fileSize) throws IOException {
+	private boolean diskSpaceSufficient(long fileSize) throws IOException {
 		long freeSpace = Files.getFileStore(currentDirectory.toPath().toRealPath()).getUsableSpace();
 		if (fileSize < freeSpace) {
 			return true;
@@ -738,9 +735,11 @@ class serverTCP {
 		serverTCP server = new serverTCP();
 		//setup of welcoming socket
 		welcomeSocket = new ServerSocket(1500); 
-		server.acceptConnection();
 			
 		while(true) {
+			if (!isConnected) {
+				server.acceptConnection();
+			}
 			server.checkValidCommand(); 
 		} 
 
