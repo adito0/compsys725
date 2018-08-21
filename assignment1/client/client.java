@@ -25,7 +25,13 @@ class clientTCP {
 	private static final File defaultDirectory = FileSystems.getDefault().getPath("").toFile().getAbsoluteFile();
 	private File currentDirectory = defaultDirectory;
 	public static File file;
-	
+
+	/** 
+	*	descripton	: 	
+	*					
+	*	args		: 	NONE
+	*	returns		:	NONE
+	**/		
 	public void attemptConnection() throws Exception {
 		inFromUser = new BufferedReader(new InputStreamReader(System.in)); 
 		clientSocket = new Socket("localhost", 1500); 
@@ -43,7 +49,13 @@ class clientTCP {
 			clientSocket.close();
 		}
 	}
-
+	
+	/** 
+	*	descripton	: 	
+	*					
+	*	args		: 	NONE
+	*	returns		:	NONE
+	**/	
 	public String readServerResponse() throws Exception {
 		String line = "";
 		int character = 0;
@@ -63,14 +75,26 @@ class clientTCP {
 		}
 		return line;
 	}
-	
+
+	/** 
+	*	descripton	: 	
+	*					
+	*	args		: 	NONE
+	*	returns		:	NONE
+	**/		
 	public void checkValidCommand() throws Exception {
 
 		System.out.println("enter command: ");
 		command = inFromUser.readLine();
-		cmd = command.substring(0,4);
 		
-		if (cmd != null) {
+		if (command != null) {
+			try {
+				cmd = command.substring(0,4);
+			}
+			catch (StringIndexOutOfBoundsException e) {
+				System.out.println("invalid command entered. pls try again"); 
+				checkValidCommand();
+			}
 			if (cmd.equalsIgnoreCase("send")) {
 				outToServer.writeBytes(command + "\0");				
 				System.out.println("save file as: ");
@@ -103,9 +127,15 @@ class clientTCP {
 		else {
 			System.out.println("invalid command entered. pls try again"); 
 			checkValidCommand();
-		}
+		}			
 	}			
 
+	/** 
+	*	descripton	: 	
+	*					
+	*	args		: 	NONE
+	*	returns		:	NONE
+	**/		
 	public void processServerResponse() throws Exception {
 		errorMessage = readServerResponse();
 		System.out.println("from server: " + errorMessage); 
@@ -122,6 +152,12 @@ class clientTCP {
 		}
 	}
 
+	/** 
+	*	descripton	: 	
+	*					
+	*	args		: 	NONE
+	*	returns		:	NONE
+	**/		
 	public boolean sendFile(File file) throws Exception {
 		System.out.println("sendFile() called");
 		byte[] bytes = new byte[(int) file.length()];
@@ -149,6 +185,12 @@ class clientTCP {
 		return true;
 	}		
 
+	/** 
+	*	descripton	: 	
+	*					
+	*	args		: 	NONE
+	*	returns		:	NONE
+	**/		
 	public void receiveFile(File file, long fileSize, boolean overwrite) throws Exception  {
 		System.out.println("receiveFile() called");
 		FileOutputStream fileOutStream = new FileOutputStream(file, overwrite);

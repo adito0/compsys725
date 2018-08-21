@@ -38,6 +38,7 @@ class serverTCP {
 	private static boolean accountSpecified = false;
 	private static boolean skipPassword = false;
 	private static boolean isConnected = false;
+	private static boolean fromCDIR = false;
 	//data related variable declaration
 	private static ServerSocket welcomeSocket;
 	private static Socket connectionSocket;
@@ -132,79 +133,80 @@ class serverTCP {
 		command = readClientResponse();
 	
 		if (command != null) {
-			try {
-				String[] parts = command.split("\\ ",2);
-				cmd = parts[0];
-				args = parts[1];
-			}
-			catch (ArrayIndexOutOfBoundsException e) {
-				cmd = command;
-			}
-			
-			System.out.println("cmd: " + cmd);
-			System.out.println("args: " + args);	
-			
-			if (cmd.equalsIgnoreCase("USER")) {
-				USER();
-			}
-			else if (cmd.equalsIgnoreCase("ACCT")) {
-				ACCT();
-			}
-			else if (cmd.equalsIgnoreCase("PASS")) {
-				PASS();
-			}	
-			else {
-				if (userLoggedIn) {
-					if (cmd.equalsIgnoreCase("TYPE")) {
-						TYPE();
-					}	
-					else if (cmd.equalsIgnoreCase("LIST")) {
-						LIST();
-					}			
-					else if (cmd.equalsIgnoreCase("CDIR")) {
-						CDIR();
-					}
-					else if (cmd.equalsIgnoreCase("KILL")) {
-						KILL();
-					}
-					else if (cmd.equalsIgnoreCase("NAME")) {
-						NAME();
-					}	
-					else if (cmd.equalsIgnoreCase("DONE")) {
-						DONE();
-					}	
-					else if (cmd.equalsIgnoreCase("RETR")) {
-						RETR();
-					}		
-					else if (cmd.equalsIgnoreCase("STOR")) {
-						STOR();
-					}		
-					else if (cmd.equalsIgnoreCase("TOBE")) {
-						TOBE();
-					}		
-					else if (cmd.equalsIgnoreCase("SEND")) {
-						SEND();
-					}		
-					else if (cmd.equalsIgnoreCase("STOP")) {
-						STOP();
-					}
-					else {
-						errorMessage = "-invalid command, pls try again";
-						sendResponseToClient(errorMessage);
-						checkValidCommand();
-					}
+				try {
+					String[] parts = command.split("\\ ",2);
+					cmd = parts[0];
+					args = parts[1];
 				}
+				catch (ArrayIndexOutOfBoundsException e) {
+					cmd = command;
+				}
+
+				//System.out.println("cmd: " + cmd);
+				//System.out.println("args: " + args);	
+
+
+				if (cmd.equalsIgnoreCase("USER")) {
+					USER();
+				}
+				else if (cmd.equalsIgnoreCase("ACCT")) {
+					ACCT();
+				}
+				else if (cmd.equalsIgnoreCase("PASS")) {
+					PASS();
+				}	
 				else {
-					if (Arrays.asList(validCommands).contains(cmd)) {
-						errorMessage = "-you are not logged in. please do so";
+					if (userLoggedIn) {
+						if (cmd.equalsIgnoreCase("TYPE")) {
+							TYPE();
+						}	
+						else if (cmd.equalsIgnoreCase("LIST")) {
+							LIST();
+						}			
+						else if (cmd.equalsIgnoreCase("CDIR")) {
+							CDIR();
+						}
+						else if (cmd.equalsIgnoreCase("KILL")) {
+							KILL();
+						}
+						else if (cmd.equalsIgnoreCase("NAME")) {
+							NAME();
+						}	
+						else if (cmd.equalsIgnoreCase("DONE")) {
+							DONE();
+						}	
+						else if (cmd.equalsIgnoreCase("RETR")) {
+							RETR();
+						}		
+						else if (cmd.equalsIgnoreCase("STOR")) {
+							STOR();
+						}		
+						else if (cmd.equalsIgnoreCase("TOBE")) {
+							TOBE();
+						}		
+						else if (cmd.equalsIgnoreCase("SEND")) {
+							SEND();
+						}		
+						else if (cmd.equalsIgnoreCase("STOP")) {
+							STOP();
+						}
+						else {
+							errorMessage = "-invalid command, pls try again";
+							sendResponseToClient(errorMessage);
+							checkValidCommand();
+						}
 					}
 					else {
-						errorMessage = "-invalid command, pls try again";
+						if (Arrays.asList(validCommands).contains(cmd)) {
+							errorMessage = "-you are not logged in. please do so";
+						}
+						else {
+							errorMessage = "-invalid command, pls try again";
+						}
+						sendResponseToClient(errorMessage);
+						checkValidCommand();					
 					}
-					sendResponseToClient(errorMessage);
-					checkValidCommand();					
 				}
-			}
 		}
 		else {
 			System.out.println("client has disconnected..."); 
@@ -277,7 +279,6 @@ class serverTCP {
 		findUser("userList.txt",args);
 		if (existsInList == false) {
 			errorMessage = "-invalid user id, try again";
-			System.out.println("line224");
 		}
 		else {
 			if (userLoggedIn) {
@@ -308,16 +309,18 @@ class serverTCP {
 		//System.out.println("ACCT() called"); 
 		if ((currentUser.equals("admin")) || (userLoggedIn)) {
 			accountSpecified = true;
-			errorMessage = "!account was not needed. skip the password";
-			System.out.println("(currentUser.equals(admin): " + (currentUser.equals("admin")));
-			System.out.println("userLoggedIn: " + userLoggedIn);
 			userLoggedIn = true;
+			if (!fromCDIR) {
+				errorMessage = "!account was not needed. skip the password";
+			}
 		}
 		else if (args.equals(currentAccount)) {
 			accountSpecified = true;
 			if (skipPassword) {
-				errorMessage = "!account ok. skip the password";
 				userLoggedIn = true;
+				if (!fromCDIR) {
+					errorMessage = "!account ok. skip the password";
+				}
 			}
 			else {
 				errorMessage = "+account valid, send password";
@@ -325,13 +328,19 @@ class serverTCP {
 		}
 		else if (args.equalsIgnoreCase("")) {
 			accountSpecified = false;
-			errorMessage = "+send password";
+			if (!fromCDIR) {
+				errorMessage = "+send password";
+			}
+			else {
+				errorMessage = "-invalid account";
+			}
 		}
 		else {
 			errorMessage = "-invalid account, try again";
 		}
-
-		sendResponseToClient(errorMessage); 
+		if (!fromCDIR) {
+			sendResponseToClient(errorMessage); 
+		}
 	}
 
 	/** 
@@ -344,19 +353,27 @@ class serverTCP {
 		//System.out.println("PASS() called");
 		if ((currentUser.equals("admin")) || (userLoggedIn) || (args.equals(currentPassword))) {
 			if (accountSpecified) {
-				errorMessage = "!logged in";
 				userLoggedIn = true;
+				if (!fromCDIR) {
+					errorMessage = "!logged in";
+				}
 			}
 			else {
 				skipPassword = true;
-				errorMessage = "+send account";
+				if (!fromCDIR) {
+					errorMessage = "+send account";				
+				}
+				else {
+					errorMessage = "-invalid password";
+				}
 			}
 		}
 		else {
 			errorMessage = "-wrong password, try again";
 		}
-
-		sendResponseToClient(errorMessage); 
+		if (!fromCDIR) {
+			sendResponseToClient(errorMessage); 
+		}
 	}	
 
 	/** 
@@ -462,53 +479,86 @@ class serverTCP {
 	*	returns		:	NONE
 	**/		
 	private void CDIR() throws Exception {
-		System.out.println("CDIR() called");
+		//System.out.println("CDIR() called");
 		String directoryToBe = args;	
-			
 		if (directoryToBe.charAt(0) == '~') {
 			directoryToBe = directoryToBe.replaceAll("~", "/");
-			currentDirectory = defaultDirectory;
+			currentDirectory = defaultDirectory; //set the currentDirectory back to the defaultDirectory
 		}
+		//handle directory argument if '/' is included
 		if (directoryToBe.charAt(0) != '/') {
 			directoryToBe = String.format("/%s", directoryToBe);
 		}
-		
+		//append a '/' if not included in directory argument
 		if (directoryToBe.charAt(directoryToBe.length()-1) != '/') {
 			directoryToBe = directoryToBe.concat("/");
 		}
-
-		File newDir = new File(currentDirectory.toString().concat(directoryToBe)).toPath().normalize().toFile();
-		//check if directory speciified exists
-		if (!newDir.isDirectory()) {
+		File newDirectory = new File(currentDirectory.toString().concat(directoryToBe)).toPath().normalize().toFile();
+		//check if directory specified exists
+		if (!newDirectory.isDirectory()) {
 			errorMessage = ("-cant't connect to directory because it doesn't exist");
-			System.out.println(newDir);
 		}
 		else {
-			if (newDir.compareTo(defaultDirectory.getAbsoluteFile()) < 0){
+			if (newDirectory.compareTo(defaultDirectory.getAbsoluteFile()) < 0){
 				errorMessage = ("-can't connect to directory because permission denied");
 			}
 			else {
-				// Replace portion of the path to ~
-				// Client doesn't need to know the absolute directory on the server
-				String newDirReply = String.format("~%s", newDir.toString().substring(defaultDirectory.toString().length()));
-				// Already logged in
+				String newDirectoryStr = String.format("~%s", newDirectory.toString().substring(defaultDirectory.toString().length()));
 				if (userLoggedIn) {
-					errorMessage = (String.format("!Changed working dir to %s", newDirReply));
-					currentDirectory = newDir;
-				} else {
-					errorMessage = String.format("+directory ok, send account/password", newDir);
-					// Run CDIR authentication procedure
-					/**if (cdirAuthenticate()) {
-						currentDirectory = newDir;
-						outToClient.writeBytes(String.format("!Changed working dir to %s", newDirReply));
-					}**/
+					errorMessage = (String.format("!changed working dir to %s", newDirectoryStr));
+					currentDirectory = newDirectory;
+				} 
+				else {
+					errorMessage = String.format("+directory ok, send account/password", newDirectory);
+					sendResponseToClient(errorMessage);
+					if (verifyIdentity()) {
+						currentDirectory = newDirectory;
+						errorMessage = String.format("!changed working dir to %s", newDirectoryStr);
+					}
 				}			
 			}
-		
 		}
 		sendResponseToClient(errorMessage);
 	}
-
+	
+	/** 
+	*	descripton	: 	KILL() deletes the file argument provided by the client in the current directory if the
+	*					file is valid (i.e exists) and not protected
+	*	args		: 	NONE
+	*	returns		:	NONE
+	**/		
+	private boolean verifyIdentity() throws Exception {
+		cmd = "";
+		args = "";
+		command = readClientResponse();
+	
+		if (command != null) {
+			try {
+				String[] parts = command.split("\\ ",2);
+				cmd = parts[0];
+				args = parts[1];
+			}
+			catch (ArrayIndexOutOfBoundsException e) {
+				cmd = command;
+			}
+			//call the appropriate command
+			if (cmd.equalsIgnoreCase("ACCT")) {
+				ACCT();
+			}
+			else if (cmd.equalsIgnoreCase("PASS")) {
+				PASS();
+			}
+			else {
+				return false;
+			}
+			return true;
+		}
+		else {
+			return false;
+		}
+	}
+	
+	
 	/** 
 	*	descripton	: 	KILL() deletes the file argument provided by the client in the current directory if the
 	*					file is valid (i.e exists) and not protected
@@ -516,11 +566,9 @@ class serverTCP {
 	*	returns		:	NONE
 	**/		
 	private void KILL() throws Exception {
-		System.out.println("KILL() called");
+		//System.out.println("KILL() called");
 		String filename = args;
-		
 		Path path = new File(currentDirectory.toString().concat("/").concat(filename)).toPath();
-		
 		try {
 			Files.delete(path);
 			errorMessage = String.format("+%s deleted", filename);
@@ -535,91 +583,84 @@ class serverTCP {
 	}
 
 	/** 
-	*	descripton	: 	
-	*					
+	*	descripton	: 	NAME() renames a file that exists in the current directory to the name specified by the
+	*					name argument provided by the client
 	*	args		: 	NONE
 	*	returns		:	NONE
 	**/		
 	private void NAME() throws Exception {
-		System.out.println("NAME() called");
-		
+		//System.out.println("NAME() called");
 		String oldFilename = args;
 		File oldFile = new File(currentDirectory.toString() + "/" + oldFilename);
-		
-		// Check if file exists
+		//check if the file requested exists
 		if (!oldFile.isFile()) {
 			errorMessage = String.format("-Can't find %s", oldFilename);
 		}
 		else {
 			errorMessage = String.format("+File exists");
 			sendResponseToClient(errorMessage);	
-			// Wait for TOBE command
 			if (TOBE()) {
 				String newFilename = args;
 				File newFile = new File(currentDirectory.toString() + "/" + newFilename);
-
-				// Check if the new filename is already taken
+				//check if a file with the same name already exists in the directory
 				if (newFile.exists()) {
-					errorMessage = String.format("-File wasn't renamed because new file name already exists");
+					errorMessage = String.format("-file wasn't renamed because new file name already exists");
 				}
-
-				// Rename
-				if (oldFile.renameTo(newFile)) {
-					errorMessage = String.format("+%s renamed to %s", oldFilename, newFilename);
-				} else {
-					errorMessage = String.format("-File wasn't renamed because it's protected");
+				else {
+					//rename file
+					if (oldFile.renameTo(newFile)) {
+						errorMessage = String.format("+%s renamed to %s", oldFilename, newFilename);
+					} else {
+						errorMessage = String.format("-file wasn't renamed because it is protected");
+					}
 				}
 			}
 			else {
-				errorMessage = String.format("-File wasn't renamed because command was not \"TOBE\"");
+				errorMessage = String.format("-file wasn't renamed because command was not \"TOBE\"");
 			}		
 		}
 		sendResponseToClient(errorMessage);			
 	}	
 
 	/** 
-	*	descripton	: 	
-	*					
+	*	descripton	: 	DONE() closes the server and informs the client of it by returning appropriate
+	*					response code
 	*	args		: 	NONE
 	*	returns		:	NONE
 	**/		
 	private void DONE() throws Exception {
-		System.out.println("DONE() called");
-		errorMessage = "+bye";
+		//System.out.println("DONE() called");
+		errorMessage = "+closing connection. bye";
+		isConnected = false;
 		sendResponseToClient(errorMessage);
 		connectionSocket.close();
 	}
 
 	/** 
-	*	descripton	: 	
-	*					
+	*	descripton	: 	RETR() retrieves a specified file from the server and send it to the client
+	*					given that the file is valid and returns response code accordingly 
 	*	args		: 	NONE
 	*	returns		:	NONE
 	**/		
 	private void RETR() throws Exception {
-		System.out.println("RETR() called");
+		//System.out.println("RETR() called");
 		filename = args;
 		Boolean skip = false; 
-		// Specified file
 		file = new File(currentDirectory.toString() + "/" + filename);
-		
-		// Specified file is not a file
+		//check if specified file exists in the directory
 		if (!file.isFile()) {
 			errorMessage = ("-File doesn't exist");
 			skip = true;
 		}
 		else {
-			System.out.println("File of interest = " + file.toPath().toAbsolutePath().toString());
-			/*		step 1:	send file size	*/
-			// Get file size
 			long fileSize = file.length();
 			errorMessage = (String.format("%s", String.valueOf(fileSize)));	
 		}
 		sendResponseToClient(errorMessage);
-		
 		if (!skip) {
 			if (SEND()) {
 				sendFile(file);
+				//no errorMessage is sent to the client if file is sent
 			}
 			else if (STOP()) {
 				errorMessage = ("+ok, RETR aborted");
@@ -630,19 +671,17 @@ class serverTCP {
 				sendResponseToClient(errorMessage);
 			}
 		}
-			
 	}
 
 	/** 
-	*	descripton	: 	
+	*	descripton	: 	SEND() checks if the client has sent a SEND command 
 	*					
 	*	args		: 	NONE
-	*	returns		:	NONE
+	*	returns		:	boolean true if client sent a SEND command
 	**/		
 	private boolean SEND() throws Exception {
 		System.out.println("SEND() called");
-		cmd = readClientResponse();
-		System.out.println(cmd);		
+		cmd = readClientResponse();		
 		if (cmd.equalsIgnoreCase("SEND")) {
 			return true;
 		}	
@@ -652,8 +691,8 @@ class serverTCP {
 	}	
 
 	/** 
-	*	descripton	: 	
-	*					
+	*	descripton	: 	sendFile() sends file over to the client when the client sends a
+	*					RETR() command to the server with valid arguments
 	*	args		: 	NONE
 	*	returns		:	NONE
 	**/		
@@ -677,17 +716,16 @@ class serverTCP {
 			dataOutToClient.flush();
 	
 		} catch (FileNotFoundException e) {
-			
+			System.out.println("FileNotFoundException");
 		} catch (IOException e) {
-			
+			System.out.println("IOException");
 		}
 	}	
 	
 	/** 
-	*	descripton	: 	
-	*					
+	*	descripton	: 	STOP() checks if the client has sent a STOP command
 	*	args		: 	NONE
-	*	returns		:	NONE
+	*	returns		:	boolean true if client sent a STOP command
 	**/		
 	private boolean STOP() throws Exception {
 		System.out.println("STOP() called");
@@ -706,10 +744,9 @@ class serverTCP {
 	}
 
 	/** 
-	*	descripton	: 	
-	*					
+	*	descripton	: 	TOBE() checks if the client has sent a TOBE command
 	*	args		: 	NONE
-	*	returns		:	NONE
+	*	returns		:	boolean true if client sent a TOBE command
 	**/		
 	private boolean TOBE() throws Exception {
 		command = readClientResponse();
@@ -719,24 +756,21 @@ class serverTCP {
 			args = parts[1];	
 		}
 		if (cmd.equalsIgnoreCase("TOBE")) {
-			System.out.println("True");
 			return true;
 		}	
 		else {
-			System.out.println("False");
 			return false;
 		}
 	}
 
 	/** 
-	*	descripton	: 	
-	*					
+	*	descripton	: 	STOR() retrieves a file from the client and store it in the currentDirectory
+	*					if the file sent is valid and the server has sufficient disk space
 	*	args		: 	NONE
 	*	returns		:	NONE
 	**/		
 	private void STOR() throws Exception {
 		System.out.println("STOR() called");
-
 		String mode = "";
 		String filename = "";		
 		
@@ -745,87 +779,72 @@ class serverTCP {
 			mode = parts[0];
 			filename = parts[1];
 		}
-		
-		// Specified file
 		File file = new File(currentDirectory.toString() + "/" + filename);
-		System.out.println(file);
 		System.out.println("File to be written = " + file.toPath().toAbsolutePath().toString());
-
 		boolean overwrite = false;
-		
 		if (mode.equalsIgnoreCase("NEW")) {
 			if (file.isFile()) {
-				errorMessage = "-File exists, but system doesn't support generations";
+				errorMessage = "-file exists but system doesn't support generations";
 			}
 			else {
-				errorMessage = "+File does not exist, will create new file";
+				errorMessage = "+file does not exist, will create new file";
 			}
 		}
 		else if (mode.equalsIgnoreCase("OLD")) {
 			if (file.isFile()) {
-				errorMessage = "+Will write over old file";
+				errorMessage = "+will write over old file";
 				overwrite = true;
 			} 
 			else {
-				errorMessage = "+Will create new file";
+				errorMessage = "+will create new file";
 			}
 		}
 		else if (mode.equalsIgnoreCase("APP")) {
 			if (file.isFile()) {
-				errorMessage = "+Will append to file";
+				errorMessage = "+will append to file";
 			} 
 			else {
-				errorMessage = "+Will create file";
+				errorMessage = "+will create file";
 			}		
 		}
 		else {
-			errorMessage = "-Invalid mode";
+			errorMessage = "-invalid mode";
 		}
-		
 		sendResponseToClient(errorMessage);
 		
-		
-		/*		step 2: Check file size	*/
 		if (SIZE()) {
-			
 			long fileSize = Long.parseLong(args);
-		
-			// File doesn't fit on server
+			//check if server has sufficient disk space
 			try {
 				if (!diskSpaceSufficient(fileSize)) {
-					errorMessage = "-Not enough room, don't send it";
+					errorMessage = "-not enough room, don't send it";
 				}
 				else {
 					errorMessage = "+ok, waiting for file";
 				}
 
 			} catch (IOException e) {
-				errorMessage = "-Error reading free space, don't send it";
+				errorMessage = "-error reading free space, don't send it";
 			}
-
 			sendResponseToClient(errorMessage);
-
-			/*		step 3: receive file	*/
-
-			// Receive the file
+			//receive file
 			try {
-				System.out.println("1");
 				receiveFile(file, fileSize, overwrite);
-				errorMessage = String.format("+Saved %s", filename);
+				errorMessage = String.format("+Ssved %s to server", filename);
 			} catch (IOException e) {
 				e.printStackTrace();
-				errorMessage = "-Couldn't save because write access permissions";
+				errorMessage = "-couldn't save because write access permissions";
 			}			
 		}
 		else {
-			errorMessage = "-Invalid argument";
+			errorMessage = "-invalid argument";
 		}
 		sendResponseToClient(errorMessage);
 	}	
 
 	/** 
-	*	descripton	: 	
-	*					
+	*	descripton	: 	receiveFile() receives file from the client when client sends over a 
+	*					STOR command
 	*	args		: 	NONE
 	*	returns		:	NONE
 	**/		
@@ -833,21 +852,19 @@ class serverTCP {
 		System.out.println("receiveFile() called");
 		FileOutputStream fileOutStream = new FileOutputStream(file, overwrite);
 		BufferedOutputStream bufferedOutStream = new BufferedOutputStream(fileOutStream);
-
-		// Read and write for all bytes
+		//read the file and write to buffer byte by byte
 		for (int i = 0; i < fileSize; i++) {
 			bufferedOutStream.write(dataInFromClient.read());
 		}
-
 		bufferedOutStream.close();
 		fileOutStream.close();
 	}
 
 	/** 
-	*	descripton	: 	
+	*	descripton	: 	SIZE() checks if the client has sent a SIZE command
 	*					
 	*	args		: 	NONE
-	*	returns		:	NONE
+	*	returns		:	boolean true if user has sent a SIZE command
 	**/		
 	private boolean SIZE() throws Exception {
 		System.out.println("SIZE() called");
@@ -866,10 +883,10 @@ class serverTCP {
 	}	
 
 	/** 
-	*	descripton	: 	
-	*					
-	*	args		: 	NONE
-	*	returns		:	NONE
+	*	descripton	: 	diskSpaceSufficient() checks if the server has sufficient disk space when client
+	*					attempts to send over a file using the STOR command
+	*	args		: 	fileSize - size of file to be sent by client
+	*	returns		:	boolean true if there is sufficient disk space
 	**/		
 	private boolean diskSpaceSufficient(long fileSize) throws IOException {
 		long freeSpace = Files.getFileStore(currentDirectory.toPath().toRealPath()).getUsableSpace();
@@ -886,13 +903,18 @@ class serverTCP {
 		serverTCP server = new serverTCP();
 		//setup of welcoming socket
 		welcomeSocket = new ServerSocket(port); 
-			
-		while(true) {
-			if (!isConnected) {
-				server.acceptConnection();
-			}
-			server.checkValidCommand(); 
-		} 
+		try {	
+			while(true) {
+				if (!isConnected) {
+					server.acceptConnection();
+				}
+				server.checkValidCommand(); 
+			} 
+		}
+		catch (IOException e) {
+			//if client got disconnected
+			System.out.print("IOException has occured");
+		}
 
 	}
 } 
