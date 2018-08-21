@@ -210,6 +210,9 @@ class serverTCP {
 					existsInList = true;
 					break;
 				}
+				else {
+					currentUser = args;
+				}
 			}
 		}
 				
@@ -221,6 +224,7 @@ class serverTCP {
 		readFile("userList.txt",args);
 		if (existsInList == false) {
 			errorMessage = "-invalid user id, try again";
+			System.out.println("line224");
 		}
 		else {
 			if (userLoggedIn) {
@@ -247,6 +251,8 @@ class serverTCP {
 		if ((currentUser.equals("admin")) || (userLoggedIn)) {
 			accountSpecified = true;
 			errorMessage = "!account was not needed. skip the password";
+			System.out.println("(currentUser.equals(admin): " + (currentUser.equals("admin")));
+			System.out.println("userLoggedIn: " + userLoggedIn);
 			userLoggedIn = true;
 		}
 		else if (args.equals(currentAccount)) {

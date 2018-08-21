@@ -11,6 +11,7 @@ import java.nio.file.attribute.*;
 class clientTCP { 
    
 	public static String command = "";
+	public static String cmd = "";
 	public static String errorMessage; 	
 	public static long fileSize = 0;
 	
@@ -22,6 +23,7 @@ class clientTCP {
 	public static BufferedInputStream fileInFromClient;
 	private static final File defaultDirectory = FileSystems.getDefault().getPath("").toFile().getAbsoluteFile();
 	private File currentDirectory = defaultDirectory;
+	public static File file;
 	
 	public void attemptConnection() throws Exception {
 		inFromUser = new BufferedReader(new InputStreamReader(System.in)); 
@@ -65,14 +67,14 @@ class clientTCP {
 
 		System.out.println("enter command: ");
 		command = inFromUser.readLine();
+		cmd = command.substring(0,4);
 		
-		if (command != null) {
-			if (command.equalsIgnoreCase("send")) {
-				File file = new File(currentDirectory.toString() + "/" + command);
+		if (cmd != null) {
+			if (cmd.equalsIgnoreCase("send")) {
+				File file = new File(currentDirectory.toString() + "/" + cmd);
 				receiveFile(file,fileSize,true);
 			}
-			outToServer.writeBytes(command + "\0");
-			if (command.equalsIgnoreCase("retr")) {
+			if (cmd.equalsIgnoreCase("retr")) {
 				String temp = readServerResponse();
 				if (temp.charAt(0) == '-') {
 					System.out.println("from server: " + temp); 
@@ -81,6 +83,13 @@ class clientTCP {
 					fileSize = Long.parseLong(temp);
 				}
 			}
+			else if (cmd.equalsIgnoreCase("stor")) {
+				System.out.println("enter filename to be sent to the server: ");
+				cmd = inFromUser.readLine();
+				file = new File(currentDirectory.toString() + "/" + cmd);
+			}
+			System.out.println("cmd: " + cmd);
+			outToServer.writeBytes(command + "\0");
 		}
 		else {
 			System.out.println("invalid command entered. pls try again"); 
@@ -92,9 +101,6 @@ class clientTCP {
 		errorMessage = readServerResponse();
 		System.out.println("from server: " + errorMessage); 
 		if (errorMessage.equalsIgnoreCase("+ok, waiting for file")) {
-			System.out.println("enter filename to be sent to the server: ");
-			command = inFromUser.readLine();
-			File file = new File(currentDirectory.toString() + "/" + command);
 			sendFile(file);
 			fetchServerResponse();
 		}
