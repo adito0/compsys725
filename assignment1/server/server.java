@@ -203,7 +203,7 @@ class serverTCP {
 				parts2 = parts1.split("\\]",2);
 				currentAccount = parts2[0];
 				currentPassword = parts2[1];
-				if (currentUser.equalsIgnoreCase(args)) {
+				if (currentUser.equals(args)) {
 					System.out.println("currentUser: " + currentUser); 
 					System.out.println("currentAccount: " + currentAccount); 
 					System.out.println("currentPassword: " + currentPassword);
@@ -228,7 +228,7 @@ class serverTCP {
 				userLoggedIn = true;
 			}
 			else {
-				if (currentUser.equalsIgnoreCase("admin")) {
+				if (currentUser.equals("admin")) {
 					errorMessage = "!" + currentUser + " logged in";
 					userLoggedIn = true;
 				}
@@ -244,12 +244,12 @@ class serverTCP {
 	public void ACCT() throws Exception {
 		System.out.println("ACCT() called"); 
 		
-		if ((currentUser.equalsIgnoreCase("admin")) || (userLoggedIn)) {
+		if ((currentUser.equals("admin")) || (userLoggedIn)) {
 			accountSpecified = true;
 			errorMessage = "!account was not needed. skip the password";
 			userLoggedIn = true;
 		}
-		else if (args.equalsIgnoreCase(currentAccount)) {
+		else if (args.equals(currentAccount)) {
 			accountSpecified = true;
 			if (skipPassword) {
 				errorMessage = "!account ok. skip the password";
@@ -273,7 +273,7 @@ class serverTCP {
 	public void PASS() throws Exception {
 		System.out.println("PASS() called");
 		
-		if ((currentUser.equalsIgnoreCase("admin")) || (userLoggedIn) || (args.equalsIgnoreCase(currentPassword))) {
+		if ((currentUser.equals("admin")) || (userLoggedIn) || (args.equals(currentPassword))) {
 			if (accountSpecified) {
 				errorMessage = "!logged in";
 				userLoggedIn = true;
@@ -338,37 +338,27 @@ class serverTCP {
 		File files[] = path.listFiles();	
 		
 		String outputList = "";
-		if ((listingFormat.equalsIgnoreCase("v")) || (listingFormat.equalsIgnoreCase("f"))) {
-			//System.out.println("path: " + path);		
+		if ((listingFormat.equalsIgnoreCase("v")) || (listingFormat.equalsIgnoreCase("f"))) {		
 			outputList = "+" + path + "\n./\n../\n"; 
-			// Go through each file in the directory
 			for (File f : files) {
 				String filename = f.getName();
-
 				// Append / to directories
 				if (f.isDirectory()) {
 					filename = filename.concat("/");
 				}
-
-				// Verbose, get information on the file
 				if (listingFormat.equalsIgnoreCase("v"))  {
 					long modifiedTime = f.lastModified();
 					String modifiedDate = dateFormat.format(new Date(modifiedTime));
 					String size = String.valueOf(f.length());
 					String owner = "";
 
-					// Get file owner's name
 					try {
 						 FileOwnerAttributeView attr = Files.getFileAttributeView(f.toPath(), FileOwnerAttributeView.class);
 						 owner = attr.getOwner().getName();
 					} catch (IOException e) {	
 						e.printStackTrace();
 					}
-
-					// print structure:   filename   modified time    size    owner
 					outputList = outputList.concat(String.format("%-30s %-20s %10s %20s \r\n", filename, modifiedDate, size, owner));
-
-				// Non verbose, filename only
 				} else {
 					outputList = outputList.concat(String.format("%s \r\n", filename));
 				}
@@ -391,13 +381,10 @@ class serverTCP {
 		catch (StringIndexOutOfBoundsException e) {
 			errorMessage = "-cant't connect to directory because it doesn't exist";
 		}		
-		// Directory is relative to root, set current dir to default, then append requested dir
 		if (newDirectoryString.charAt(0) == '~') {
 			newDirectoryString = newDirectoryString.replaceAll("~", "/");
 			currentDirectory = defaultDirectory;
 		}
-		
-		// Add / for directory
 		if (newDirectoryString.charAt(0) != '/') {
 			newDirectoryString = String.format("/%s", newDirectoryString);
 		}
