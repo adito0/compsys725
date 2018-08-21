@@ -8,6 +8,8 @@ import java.net.*;
 import java.nio.file.*;
 import java.nio.file.attribute.*;
 import java.util.ArrayList;
+import java.util.List; 
+import java.util.Arrays;
 import java.util.StringTokenizer;
 import java.util.NoSuchElementException;
 import java.util.Date;
@@ -87,6 +89,7 @@ class serverTCP {
 	}
 	
 	public void checkValidCommand() throws Exception {
+		String[] yourArray = new String[] {"TYPE","LIST","CDIR","KILL","NAME","DONE","RETR","STOR","TOBE","SEND","STOP"};
 		cmd = "";
 		args = "";
 		command = readMessage();
@@ -155,7 +158,7 @@ class serverTCP {
 					}
 				}
 				else {
-					if ((cmd.equalsIgnoreCase("TYPE")) || (cmd.equalsIgnoreCase("LIST")) || (cmd.equalsIgnoreCase("CDIR")) || (cmd.equalsIgnoreCase("KILL")) || (cmd.equalsIgnoreCase("NAME")) || (cmd.equalsIgnoreCase("DONE")) || (cmd.equalsIgnoreCase("RETR")) || (cmd.equalsIgnoreCase("STOR")) ||  (cmd.equalsIgnoreCase("TOBE")) || (cmd.equalsIgnoreCase("SEND")) || (cmd.equalsIgnoreCase("STOP")) ){
+					if (Arrays.asList(yourArray).contains(cmd)) {
 						errorMessage = "-you are not logged in. please do so";
 					}
 					else {
