@@ -98,6 +98,7 @@ class serverTCP {
 		}
 		catch (IOException e) {
 			System.out.println("IOException has occured sendResponseToClient");
+			System.exit(0);
 		}
 	}
 
@@ -947,6 +948,7 @@ class serverTCP {
 				System.out.print("IOException has occured");
 			}
 		}
+		System.exit(0);
 	}
 } 
 
