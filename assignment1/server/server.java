@@ -230,6 +230,8 @@ class serverTCP {
 		String[] parts0;
 		String parts1;
 		String[] parts2;
+		accountSpecified = false;
+		skipPassword = false;		
 		currentUser = null;
 		currentAccount = null;
 		currentPassword = null;
@@ -930,19 +932,21 @@ class serverTCP {
 		serverTCP server = new serverTCP();
 		//setup of welcoming socket
 		welcomeSocket = new ServerSocket(port); 
-		try {	
-			while(true) {
-				if (!isConnected) {
-					server.acceptConnection();
-				}
-				server.checkValidCommand(); 
-			} 
+		while (true) {
+			try {	
+				while(true) {
+					if (!isConnected) {
+						server.acceptConnection();
+					}
+					server.checkValidCommand(); 
+				} 
+			}
+			catch (IOException e) {
+				//if client got disconnected
+				isConnected = false;
+				System.out.print("IOException has occured");
+			}
 		}
-		catch (IOException e) {
-			//if client got disconnected
-			System.out.print("IOException has occured");
-		}
-
 	}
 } 
 

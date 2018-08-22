@@ -10,20 +10,23 @@ import java.nio.file.attribute.*;
 
 class clientTCP { 
    
+	//variable declaration
 	private static String command = "";
 	private static String currentUser = "";
 	private static String cmd = "";
 	private static String errorMessage;
 	private static String filename = "";
-	private static long fileSize = 0;
 	private static String host = "localhost";
 	private static int port = 1500;
+	private static long fileSize = 0;
+	//data and connection related variable declaration
 	private static BufferedReader inFromUser;
 	private static Socket clientSocket;
 	private static DataOutputStream outToServer;
 	private static BufferedReader inFromServer;
 	private static DataOutputStream fileOutToServer; 
 	private static BufferedInputStream fileInFromClient;
+	//file related variable declaration
 	private static final File defaultDirectory = FileSystems.getDefault().getPath("").toFile().getAbsoluteFile();
 	private static File userFolder;
 	private File currentDirectory = defaultDirectory;
@@ -36,32 +39,28 @@ class clientTCP {
 	*	returns		:	NONE
 	**/		
 	public boolean attemptConnection() throws Exception {
+
+		inFromUser = new BufferedReader(new InputStreamReader(System.in)); 
 		try {
-			inFromUser = new BufferedReader(new InputStreamReader(System.in)); 
 			clientSocket = new Socket(host, port); 
 			outToServer = new DataOutputStream(clientSocket.getOutputStream()); 
 			inFromServer = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
 			fileOutToServer = new DataOutputStream(clientSocket.getOutputStream());
 			fileInFromClient = new BufferedInputStream(clientSocket.getInputStream());
 			processServerResponse();
-
 			if (errorMessage.charAt(0) == '+') {
 				System.out.println("connection to server is established");
-			}
-			else {
-				System.out.println("could not connect to server");
-				clientSocket.close();
-			}
-			return true;
-		}
-		catch (ConnectException e) {
-			System.out.println("server is offline");
-			return false;
+				return true;
+			}			
 		}
 		catch (SocketException e) {
-			System.out.println("server went offline");
-			return false;		
+			System.out.println("could not connect to server");
+			System.exit(0);
+			clientSocket.close();
+			return false;
 		}
+
+		return false;
 	}
 	
 	/** 
@@ -77,7 +76,8 @@ class clientTCP {
 		while (true) {
 			try {
 				character = inFromServer.read();
-			} catch (IOException e) {
+			} 
+			catch (IOException e) {
 				e.printStackTrace();
 			}
 			if (character == 0) {
@@ -97,52 +97,75 @@ class clientTCP {
 	*	returns		:	NONE
 	**/		
 	public void checkValidCommand() throws Exception {
-		System.out.println("enter command: ");
-		command = inFromUser.readLine();
-		if (command != null) {
-			try {
-				cmd = command.substring(0,4);
-			}
-			catch (StringIndexOutOfBoundsException e) {
-				System.out.println("invalid command entered. pls try again"); 
-				checkValidCommand();
-			}
-			if (cmd.equalsIgnoreCase("send")) {
-				outToServer.writeBytes(command + "\0");				
-				System.out.println("save file as: ");
-				filename = inFromUser.readLine();
-				File file = new File(userFolder.toString() + "/" + filename);
-				receiveFile(file,fileSize,true);
-				checkValidCommand();
-			}
-			else if (cmd.equalsIgnoreCase("stor")) {
-				System.out.println("enter filename to be sent to the server: ");
-				cmd = inFromUser.readLine();
-				file = new File(currentDirectory.toString() + "/" + cmd);
+		try {
+			//prompts user for a commmand
+			System.out.println("enter command: ");		
+			command = inFromUser.readLine();
+			//checks if the user has typed in anything
+			if (command != null) {
 				try {
-					FileInputStream fis = new FileInputStream(file);
-					BufferedInputStream bufferedInStream = new BufferedInputStream(new FileInputStream(file));
-					System.out.println("filesize : " + fis.available());
-					fis.close();
+					cmd = command.substring(0,4);
 				}
-				catch (FileNotFoundException e) {
-					System.out.println("size of file could not be retrieved bcs there is no such file");
+				catch (StringIndexOutOfBoundsException e) {
+					System.out.println("invalid command entered. pls try again"); 
+					checkValidCommand();
 				}
-				outToServer.writeBytes(command + "\0");
-			}
-			else if (cmd.equalsIgnoreCase("user")) {
-				outToServer.writeBytes(command + "\0");
-				String[] parts = command.split("\\ ",2);
-				currentUser = parts[1];				
-				userFolder = FileSystems.getDefault().getPath(currentUser).toFile().getAbsoluteFile();
+				//if user sends a SEND command, prompt user to enter the filename for the incoming file from server
+				if (cmd.equalsIgnoreCase("send")) {
+					outToServer.writeBytes(command + "\0");				
+					System.out.println("save file as: ");
+					filename = inFromUser.readLine();
+					File file = new File(userFolder.toString() + "/" + filename);
+					receiveFile(file,fileSize,true);
+					checkValidCommand();
+				}
+				/**	
+				*	if user sends a STOR command, prompt user to enter the filename of the file intended for the server
+				*	as the file size will be fetched and printed to the console in preparation for the SIZE command
+				*	and the file will be prepared for sendFile()
+				**/
+				else if (cmd.equalsIgnoreCase("stor")) {
+					outToServer.writeBytes(command + "\0");
+					System.out.println("enter filename to be sent to the server: ");
+					cmd = inFromUser.readLine();
+					file = new File(currentDirectory.toString() + "/" + cmd);
+					try {
+						FileInputStream fis = new FileInputStream(file);
+						BufferedInputStream bufferedInStream = new BufferedInputStream(new FileInputStream(file));
+						System.out.println("SIZE : " + fis.available());
+						fis.close();
+					}
+					catch (FileNotFoundException e) {
+						System.out.println("size of file could not be retrieved bcs there is no such file");
+					}
+				}
+				/**	
+				*	the username entered will be stored when the user sends a USER command to make sure the files
+				*	retrieved from the server via the RETR command is stored in the correct userFolder within the
+				*	client directory
+				**/				
+				else if (cmd.equalsIgnoreCase("user")) {
+					outToServer.writeBytes(command + "\0");
+					String[] parts = command.split("\\ ",2);
+					currentUser = parts[1];				
+					userFolder = FileSystems.getDefault().getPath(currentUser).toFile().getAbsoluteFile();
+				}
+				else {
+					outToServer.writeBytes(command + "\0");
+				}
 			}
 			else {
-				outToServer.writeBytes(command + "\0");
-			}
+				System.out.println("invalid command entered. pls try again"); 
+				checkValidCommand();
+			}	
 		}
-		else {
-			System.out.println("invalid command entered. pls try again"); 
-			checkValidCommand();
+		catch (ConnectException e) {
+			System.out.println("server is offline");
+			System.exit(0);
+		}
+		catch (SocketException e) {
+			System.out.println("server went offline");	
+			System.exit(0);
 		}			
 	}			
 
@@ -153,20 +176,30 @@ class clientTCP {
 	*	returns		:	NONE
 	**/		
 	public void processServerResponse() throws Exception {
-		errorMessage = readServerResponse();
-		System.out.println("from server: " + errorMessage); 
-		
-		if (errorMessage.equalsIgnoreCase("+ok, waiting for file")) {
-			sendFile(file);
-			processServerResponse();
+		try {
+			errorMessage = readServerResponse();
+			System.out.println("from server: " + errorMessage); 
+			//initiate file sharing when server sends the appropriate errorMessage after a STOR command
+			if (errorMessage.equalsIgnoreCase("+ok, waiting for file")) {
+				sendFile(file);
+				processServerResponse();
+			}
+			else if ((errorMessage.charAt(0) == '!') || (errorMessage.charAt(0) == '+') || (errorMessage.charAt(0) == '-')) {
+				//do nothing
+			}
+			else {
+				//if server sends over the file size in return for the RETR command sent, it is saved to fileSize
+				fileSize = Long.parseLong(errorMessage.replaceAll("\\s",""));	
+			}
 		}
-		else if ((errorMessage.charAt(0) == '!') || (errorMessage.charAt(0) == '+') || (errorMessage.charAt(0) == '-')) {
-			//do nothing
+		catch (ConnectException e) {
+			System.out.println("server is offline");
+			System.exit(0);
 		}
-		else {
-			//if server sends over the file size in return for the RETR command sent, it is saved to fileSize
-			fileSize = Long.parseLong(errorMessage.replaceAll("\\s",""));	
-		}
+		catch (SocketException e) {
+			System.out.println("server went offline");	
+			System.exit(0);
+		}		
 	}
 
 	/** 
@@ -175,10 +208,8 @@ class clientTCP {
 	*	args		: 	NONE
 	*	returns		:	boolean true if the file was sent succesfully
 	**/		
-	public boolean sendFile(File file) throws Exception {
-		System.out.println("sendFile() called");
+	public void sendFile(File file) throws Exception {
 		byte[] bytes = new byte[(int) file.length()];
-
 		try {
 			FileInputStream fis = new FileInputStream(file);
 			BufferedInputStream bufferedInStream = new BufferedInputStream(new FileInputStream(file));
@@ -190,12 +221,14 @@ class clientTCP {
 			bufferedInStream.close();
 			fis.close();
 			fileOutToServer.flush();
-		} catch (FileNotFoundException e) {
-			return false;
-		} catch (IOException e) {
-			return false;
-		}
-		return true;
+			System.out.println("file has been sent to server");
+		} 
+		catch (FileNotFoundException e) {
+			System.out.println("FileNotFoundException when trying to sendFile");
+		} 
+		catch (IOException e) {
+			System.out.println("IOException when trying to sendFile");
+		}	
 	}		
 
 	/** 
@@ -205,27 +238,46 @@ class clientTCP {
 	*	returns		:	NONE
 	**/		
 	public void receiveFile(File file, long fileSize, boolean overwrite) throws Exception  {
-		System.out.println("receiveFile() called");
-		FileOutputStream fileOutStream = new FileOutputStream(file, overwrite);
-		BufferedOutputStream bufferedOutStream = new BufferedOutputStream(fileOutStream);
-		//read the file and write to buffer byte by byte
-		for (int i = 0; i < fileSize; i++) {
-			bufferedOutStream.write(fileInFromClient.read());
+		try {
+			FileOutputStream fileOutStream = new FileOutputStream(file, overwrite);
+			BufferedOutputStream bufferedOutStream = new BufferedOutputStream(fileOutStream);
+			//read the file and write to buffer byte by byte
+			for (int i = 0; i < fileSize; i++) {
+				bufferedOutStream.write(fileInFromClient.read());
+			}
+			bufferedOutStream.close();
+			fileOutStream.close();
+			System.out.println(filename + " has been saved to /" + currentUser);
 		}
-		bufferedOutStream.close();
-		fileOutStream.close();
-		System.out.println(filename + " has been saved to the directory");
+		catch (ConnectException e) {
+			System.out.println("server is offline");
+			System.exit(0);
+		}
+		catch (SocketException e) {
+			System.out.println("server went offline");
+			System.exit(0);
+		}		
 	}
 	
     public static void main(String argv[]) throws Exception 
     { 
 		//create new instance of TCPServer
-		clientTCP server = new clientTCP();		
-		if (server.attemptConnection()) {	
-			while(true) {
-				server.checkValidCommand();
-				server.processServerResponse();
+		clientTCP server = new clientTCP();	
+		try {
+			if (server.attemptConnection()) {	
+				while(true) {
+					server.checkValidCommand();
+					server.processServerResponse();
+				}
 			}
 		}
+		catch (ConnectException e) {
+			System.out.println("server is offline");
+			System.exit(0);
+		}
+		catch (SocketException e) {
+			System.out.println("server went offline");	
+			System.exit(0);
+		}			
     } 
 } 
