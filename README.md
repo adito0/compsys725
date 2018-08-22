@@ -110,7 +110,6 @@ from server: -wrong password, try again
 Changes the type of transmission byte stream. By default, type is binary. Requires user to be logged in.
 
 If {A} is provided by the client, the type will be changed to ASCII.<br>
-
 If {B} is provided by the client, the  type will be changed to Binary (default).<br>
 If {C} is provided by the client, the type will be changed to Continuous.
 
@@ -129,7 +128,6 @@ from server: -you are not logged in. please do so
 Lists all the files and folders in the specified <directory>. If directory is not specified, a list of the files and folders within the current directory is returned. Requires user to be logged in.
 
 If {F} is provided by the client, the listing will only include the filenames.<br>
-
 If {V} is provided by the client, the listing will include the details relating to the file which are the filenames, last modified time/date, filesize in bytes and the owner of the file.
 
 - If user did not specify a directory:
@@ -239,7 +237,7 @@ $ NAME dog.jpg
 from server: -can't find dog.jpg
 ```
 
-- ```TOBE <filename>```<br>
+#### ```TOBE <filename>```<br>
 Provides the server with the <filename> following the NAME command. Should only be provided when user has received a '+' from server after sending a NAME command.
 	
 ```
@@ -287,15 +285,13 @@ cat.jpg has been saved to /admin
 Sends a file to the server's current directory with a specified {NEW|OLD|APP} mode. Requires user to be logged in.
 
 If {NEW} is provided by the client, the server will create a new file if the file
-is yet to exist. <br><br>
-
+is yet to exist. <br>
 If {OLD} is provided by the client, the server will overwrite the existing file if it 
 already exists in the current directory. If it does not exist, a new file will be
-created.<br><br>
-
+created.<br>
 If {APP} is provided by the client, the server will append to the existing file if it
 already exists in the current directory. If it does not exist, a new file will be
-created.<br>
+created.
 
 Send a cat.jpg to the server:
 The client will be asked (by the client side, not server) to enter the filename of the file to be sent and the size of the file will be returned so that the user do not need to check for the file size manually for the following SIZE command.
