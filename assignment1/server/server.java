@@ -948,7 +948,6 @@ class serverTCP {
 				System.out.print("IOException has occured");
 			}
 		}
-		System.exit(0);
 	}
 } 
 
