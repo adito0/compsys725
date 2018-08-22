@@ -102,7 +102,7 @@ class serverTCP {
 	private String readClientResponse() {
 		String concatenatedString = "";
 		int character = 0;
-
+		//loop through char by char until a terminating character is found
 		while (true) {
 			try {
 				character = inFromClient.read();
@@ -112,7 +112,7 @@ class serverTCP {
 			if (character == 0) {
 				break;
 			}
-			// Concatenate char into concatenatedString.
+			//convert and concatenate the characters into a string
 			concatenatedString = concatenatedString.concat(Character.toString((char)character));
 		}
 		return concatenatedString;
@@ -275,8 +275,8 @@ class serverTCP {
 	*	returns		:	NONE
 	**/		
 	private void USER() throws Exception {
-		//System.out.println("USER() called");
-		findUser("userList.txt",args);
+		System.out.println("USER() called");
+		findUser("res/userList.txt",args);
 		if (existsInList == false) {
 			errorMessage = "-invalid user id, try again";
 		}
@@ -306,7 +306,7 @@ class serverTCP {
 	*	returns		:	NONE
 	**/		
 	private void ACCT() throws Exception {
-		//System.out.println("ACCT() called"); 
+		System.out.println("ACCT() called"); 
 		if ((currentUser.equals("admin")) || (userLoggedIn)) {
 			accountSpecified = true;
 			userLoggedIn = true;
@@ -350,7 +350,7 @@ class serverTCP {
 	*	returns		:	NONE
 	**/		
 	private void PASS() throws Exception {
-		//System.out.println("PASS() called");
+		System.out.println("PASS() called");
 		if ((currentUser.equals("admin")) || (userLoggedIn) || (args.equals(currentPassword))) {
 			if (accountSpecified) {
 				userLoggedIn = true;
@@ -383,7 +383,7 @@ class serverTCP {
 	*	returns		:	NONE
 	**/		
 	private void TYPE() throws Exception {
-		//System.out.println("TYPE() called");
+		System.out.println("TYPE() called");
 		if (args.equalsIgnoreCase("a")) {
 			fileType = "a";
 			errorMessage = "+using Ascii mode";
@@ -411,7 +411,7 @@ class serverTCP {
 	*	returns		:	NONE
 	**/		
 	private void LIST() throws Exception {
-		//System.out.println("LIST() called");
+		System.out.println("LIST() called");
 		int strlen = args.length();
 		String listingFormat = "";
 		String dir = "";
@@ -479,7 +479,7 @@ class serverTCP {
 	*	returns		:	NONE
 	**/		
 	private void CDIR() throws Exception {
-		//System.out.println("CDIR() called");
+		System.out.println("CDIR() called");
 		String directoryToBe = args;	
 		if (directoryToBe.charAt(0) == '~') {
 			directoryToBe = directoryToBe.replaceAll("~", "/");
@@ -505,7 +505,7 @@ class serverTCP {
 			else {
 				String newDirectoryStr = String.format("~%s", newDirectory.toString().substring(defaultDirectory.toString().length()));
 				if (userLoggedIn) {
-					errorMessage = (String.format("!changed working dir to %s", newDirectoryStr));
+					errorMessage = (String.format("!changed current directory to %s", newDirectoryStr));
 					currentDirectory = newDirectory;
 				} 
 				else {
@@ -513,7 +513,7 @@ class serverTCP {
 					sendResponseToClient(errorMessage);
 					if (verifyIdentity()) {
 						currentDirectory = newDirectory;
-						errorMessage = String.format("!changed working dir to %s", newDirectoryStr);
+						errorMessage = String.format("!changed current directory to %s", newDirectoryStr);
 					}
 				}			
 			}
@@ -528,6 +528,7 @@ class serverTCP {
 	*	returns		:	NONE
 	**/		
 	private boolean verifyIdentity() throws Exception {
+		System.out.println("verifyIdentity() called");
 		cmd = "";
 		args = "";
 		command = readClientResponse();
@@ -566,18 +567,18 @@ class serverTCP {
 	*	returns		:	NONE
 	**/		
 	private void KILL() throws Exception {
-		//System.out.println("KILL() called");
+		System.out.println("KILL() called");
 		String filename = args;
 		Path path = new File(currentDirectory.toString().concat("/").concat(filename)).toPath();
 		try {
 			Files.delete(path);
 			errorMessage = String.format("+%s deleted", filename);
 			
-		} catch (NoSuchFileException x) {
+		} catch (NoSuchFileException e) {
 		    errorMessage = "-no such file exist in the directory";
 		    
-		} catch (IOException x) {
-		    errorMessage = "-file is proteccc";
+		} catch (IOException e) {
+		    errorMessage = "-file is protected";
 		}
 		sendResponseToClient(errorMessage);
 	}
@@ -589,15 +590,15 @@ class serverTCP {
 	*	returns		:	NONE
 	**/		
 	private void NAME() throws Exception {
-		//System.out.println("NAME() called");
+		System.out.println("NAME() called");
 		String oldFilename = args;
 		File oldFile = new File(currentDirectory.toString() + "/" + oldFilename);
 		//check if the file requested exists
 		if (!oldFile.isFile()) {
-			errorMessage = String.format("-Can't find %s", oldFilename);
+			errorMessage = String.format("-can't find %s", oldFilename);
 		}
 		else {
-			errorMessage = String.format("+File exists");
+			errorMessage = String.format("+file exists");
 			sendResponseToClient(errorMessage);	
 			if (TOBE()) {
 				String newFilename = args;
@@ -616,7 +617,7 @@ class serverTCP {
 				}
 			}
 			else {
-				errorMessage = String.format("-file wasn't renamed because command was not \"TOBE\"");
+				errorMessage = String.format("-file wasn't renamed because TOBE <new-filename> was not received");
 			}		
 		}
 		sendResponseToClient(errorMessage);			
@@ -629,7 +630,7 @@ class serverTCP {
 	*	returns		:	NONE
 	**/		
 	private void DONE() throws Exception {
-		//System.out.println("DONE() called");
+		System.out.println("DONE() called");
 		errorMessage = "+closing connection. bye";
 		isConnected = false;
 		sendResponseToClient(errorMessage);
@@ -643,13 +644,13 @@ class serverTCP {
 	*	returns		:	NONE
 	**/		
 	private void RETR() throws Exception {
-		//System.out.println("RETR() called");
+		System.out.println("RETR() called");
 		filename = args;
 		Boolean skip = false; 
 		file = new File(currentDirectory.toString() + "/" + filename);
 		//check if specified file exists in the directory
 		if (!file.isFile()) {
-			errorMessage = ("-File doesn't exist");
+			errorMessage = ("-file doesn't exist");
 			skip = true;
 		}
 		else {
@@ -667,7 +668,7 @@ class serverTCP {
 				sendResponseToClient(errorMessage);
 			}
 			else {
-				errorMessage = ("-Invalid response");
+				errorMessage = ("-invalid response");
 				sendResponseToClient(errorMessage);
 			}
 		}
@@ -749,6 +750,7 @@ class serverTCP {
 	*	returns		:	boolean true if client sent a TOBE command
 	**/		
 	private boolean TOBE() throws Exception {
+		System.out.println("TOBE() called");
 		command = readClientResponse();
 		if (command != null) {
 			String[] parts = command.split("\\ ",2);
@@ -830,7 +832,7 @@ class serverTCP {
 			//receive file
 			try {
 				receiveFile(file, fileSize, overwrite);
-				errorMessage = String.format("+Ssved %s to server", filename);
+				errorMessage = String.format("+saved %s to server's current directory", filename);
 			} catch (IOException e) {
 				e.printStackTrace();
 				errorMessage = "-couldn't save because write access permissions";
@@ -889,6 +891,7 @@ class serverTCP {
 	*	returns		:	boolean true if there is sufficient disk space
 	**/		
 	private boolean diskSpaceSufficient(long fileSize) throws IOException {
+		System.out.println("diskSpaceSufficient() called");
 		long freeSpace = Files.getFileStore(currentDirectory.toPath().toRealPath()).getUsableSpace();
 		if (fileSize < freeSpace) {
 			return true;

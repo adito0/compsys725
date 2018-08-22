@@ -1,7 +1,5 @@
 
+aA[bB]cC
 upi123[upi123]upi123
 aa[bb]cc
-xx[yy]zz
-kk[ll]mm
-aA[bB]cC
 admin[admin]admin
