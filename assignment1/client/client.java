@@ -115,13 +115,11 @@ class clientTCP {
 				catch (FileNotFoundException e) {
 					System.out.println("size of file could not be retrieved bcs there is no such file");
 				}
-				System.out.println("please check for size of file manually");
 				outToServer.writeBytes(command + "\0");
 			}			
 			else {
 				outToServer.writeBytes(command + "\0");
 			}
-			System.out.println(command);
 		}
 		else {
 			System.out.println("invalid command entered. pls try again"); 
