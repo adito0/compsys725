@@ -589,7 +589,7 @@ class serverTCP {
 				else {
 					outputList = outputList.concat(String.format("%s \r\n", filename));
 				}
-			}
+			}	
 		}
 		//the listingFormat argument provided is invalid
 		else {
@@ -945,8 +945,12 @@ class serverTCP {
 			catch (IOException e) {
 				//if client got disconnected
 				isConnected = false;
-				System.out.print("IOException has occured");
+				System.out.print("IOException has occured pls reconnect\n");
 			}
+			catch (NullPointerException e) {
+				isConnected = false;
+				System.out.print("NullPointerException has occured pls reconnect\n");
+			}			
 		}
 	}
 } 
