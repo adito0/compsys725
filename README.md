@@ -40,9 +40,9 @@ To log in, an existing account with the correct password is needed.
 However, admin is able to log in without an account or a password.
 
 ### Directory Structure
-The server's default directory is ```assignment1/server```.
-The client's default directory is ```assignment1/client```.
-Files retrieved by the client from the server will be stored in the default directory. 
+The server's default directory is ```assignment1/server```.<br>
+The client's default directory is ```assignment1/client```.<br>
+Files retrieved by the client from the server will be stored in the default directory.<br> 
 The files sent to the server by the client can be stored in either the default
 directory or whichever subdirectory within its default directory.
 
@@ -50,9 +50,9 @@ Available subdirectories are ```assignment1/server/a``` and ```assignment1/serve
 
 ### Commands
 
-- ```USER <username>```
-Checks whether username exists in the server records.
-Grants immediate log in for User admin.
+#### ```USER <username>```<br>
+Checks whether username exists in the server records.<br>
+Grants immediate log in for User admin.<br>
 Example:
 ```
 $ USER admin
@@ -61,8 +61,8 @@ $ USER upi123
 from server: +user id valid, send account and password
 ```
 
-- ```ACCT <account>```
-Checks if the account corresponds to the provided username (for non-admin users)
+#### ```ACCT <account>```<br>
+Checks if the account corresponds to the provided username (for non-admin users)<br>
 If password has been provided, account corresponding to the username and password
 will be logged in without having to provide the password again.
 
@@ -71,8 +71,8 @@ $ ACCT upi123
 from server: +account valid, send password
 ```
 
-- ```PASS <password>```
-Checks if the password corresponds to the provided account (for non-admin users)
+#### ```PASS <password>```<br>
+Checks if the password corresponds to the provided account (for non-admin users)<br>
 Password can also be provided before providing the account.
 
 - If user has provided account
@@ -86,8 +86,8 @@ $ PASS upi123
 from server: +send account
 ```
 
-- ```TYPE {A|B|C}```
-Changes the type of transmission byte stream. By default, type is binary.
+#### ```TYPE {A|B|C}```<br>
+Changes the type of transmission byte stream. By default, type is binary.<br>
 Requires user to be logged in.
 
 - If user is logged in:
@@ -101,12 +101,12 @@ $ TYPE A
 from server: -you are not logged in. please do so
 ```
 
-- ```LIST {F|V} <directory>```
-Lists all the files and folders in the specified <directory>. 
+#### ```LIST {F|V} <directory>```<br>
+Lists all the files and folders in the specified <directory>. <br>
 If directory is not specified, a list of the files and folders within the current
 directory is returned. Requires user to be logged in.
 
-If {F} is provided by the client, the listing will only include the filenames.
+If {F} is provided by the client, the listing will only include the filenames.<br><br>
 
 If {V} is provided by the client, the listing will include the details relating 
 to the file which are the filenames, last modified time/date, filesize in bytes 
@@ -163,8 +163,8 @@ p2.jpg                         21/08/2018 16:47         628817              syam
 
 ```
 
-- ```CDIR <new-directory>```
-Changes the current working directory to the specified <new-directory>.
+#### ```CDIR <new-directory>```<br>
+Changes the current working directory to the specified <new-directory>.<br>
 If user is not logged in, their account and password will be needed before
 being able to change the directory. Directory can only be changed to the 
 subdirectories within the default one. Requires user to be logged in.
@@ -187,7 +187,7 @@ $ CDIR k
 from server: -cant't connect to directory because it doesn't exist
 ```
 
-- ```KILL <filename>```
+#### ```KILL <filename>```<br>
 Deletes the specified <filename> in the current directory if the file exists and is
 not protected. Requires user to be logged in.
 	
@@ -204,8 +204,8 @@ from server: -no such file exist in the directory
 
 ```
 
-- ```NAME <filename>```
-Renames specified <filename> if it exists in the current directory. 
+#### ```NAME <filename>```<br>
+Renames specified <filename> if it exists in the current directory. <br>
 If server sends a '+', user needs to reply with a TOBE <filename>.
 Requires user to be logged in.
 	
@@ -215,8 +215,8 @@ from server: +File exists
 
 ```
 
-- ```TOBE <filename>```
-Provides the server with the <filename> following the NAME command.
+- ```TOBE <filename>```<br>
+Provides the server with the <filename> following the NAME command.<br>
 Should only be provided when user has received a '+' from server after
 sending a NAME command.
 	
@@ -226,7 +226,7 @@ from server: +t5.txt renamed to t1.txt
 
 ```
 
-- ```DONE```
+#### ```DONE```
 Disconnects the client from the server.
 
 ```
@@ -234,7 +234,7 @@ $ DONE
 from server: +closing connection. bye
 ```
 
-- ```RETR <filename>```
+#### ```RETR <filename>```<br>
 Retrieves the specified <filename> from the server if the file fits in the client's
 system and if the file is in the current directory (subdirectories are not allowed).
 If the server has replied with the size of the file requested, user needs to reply 
@@ -246,7 +246,7 @@ $ RETR p2.jpg
 from server: 628817
 
 ```
-Send a SEND command to proceed with file transfer. 
+Send a SEND command to proceed with file transfer. <br>
 The client will be asked (by the client side, not server)
 to enter a filename for the incoming file.
 ```
@@ -260,20 +260,20 @@ p2.jpg has been saved to the directory
 ```
 
 
-- ```STOR {NEW|OLD|APP} <filename>```
+#### ```STOR {NEW|OLD|APP} <filename>```<br>
 Sends a file to the server's current directory with a specified {NEW|OLD|APP} 
 mode. Requires user to be logged in.
 
 If {NEW} is provided by the client, the server will create a new file if the file
-is yet to exist. 
+is yet to exist. <br><br>
 
 If {OLD} is provided by the client, the server will overwrite the existing file if it 
 already exists in the current directory. If it does not exist, a new file will be
-created.
+created.<br><br>
 
 If {APP} is provided by the client, the server will append to the existing file if it
 already exists in the current directory. If it does not exist, a new file will be
-created.
+created.<br><br>
 
 Send a cat.jpg to the server:
 The client will be asked (by the client side, not server)
