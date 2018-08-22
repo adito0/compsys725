@@ -11,6 +11,7 @@ import java.nio.file.attribute.*;
 class clientTCP { 
    
 	private static String command = "";
+	private static String currentUser = "";
 	private static String cmd = "";
 	private static String errorMessage;
 	private static String filename = "";
@@ -24,6 +25,7 @@ class clientTCP {
 	private static DataOutputStream fileOutToServer; 
 	private static BufferedInputStream fileInFromClient;
 	private static final File defaultDirectory = FileSystems.getDefault().getPath("").toFile().getAbsoluteFile();
+	private static File userFolder;
 	private File currentDirectory = defaultDirectory;
 	public static File file;
 
@@ -33,21 +35,32 @@ class clientTCP {
 	*	args		: 	NONE
 	*	returns		:	NONE
 	**/		
-	public void attemptConnection() throws Exception {
-		inFromUser = new BufferedReader(new InputStreamReader(System.in)); 
-		clientSocket = new Socket(host, port); 
-		outToServer = new DataOutputStream(clientSocket.getOutputStream()); 
-		inFromServer = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
-		fileOutToServer = new DataOutputStream(clientSocket.getOutputStream());
-		fileInFromClient = new BufferedInputStream(clientSocket.getInputStream());
-		processServerResponse();
-		
-		if (errorMessage.charAt(0) == '+') {
-			System.out.println("connection to server is established");
+	public boolean attemptConnection() throws Exception {
+		try {
+			inFromUser = new BufferedReader(new InputStreamReader(System.in)); 
+			clientSocket = new Socket(host, port); 
+			outToServer = new DataOutputStream(clientSocket.getOutputStream()); 
+			inFromServer = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
+			fileOutToServer = new DataOutputStream(clientSocket.getOutputStream());
+			fileInFromClient = new BufferedInputStream(clientSocket.getInputStream());
+			processServerResponse();
+
+			if (errorMessage.charAt(0) == '+') {
+				System.out.println("connection to server is established");
+			}
+			else {
+				System.out.println("could not connect to server");
+				clientSocket.close();
+			}
+			return true;
 		}
-		else {
-			System.out.println("could not connect to server");
-			clientSocket.close();
+		catch (ConnectException e) {
+			System.out.println("server is offline");
+			return false;
+		}
+		catch (SocketException e) {
+			System.out.println("server went offline");
+			return false;		
 		}
 	}
 	
@@ -98,7 +111,7 @@ class clientTCP {
 				outToServer.writeBytes(command + "\0");				
 				System.out.println("save file as: ");
 				filename = inFromUser.readLine();
-				File file = new File(currentDirectory.toString() + "/" + filename);
+				File file = new File(userFolder.toString() + "/" + filename);
 				receiveFile(file,fileSize,true);
 				checkValidCommand();
 			}
@@ -116,7 +129,13 @@ class clientTCP {
 					System.out.println("size of file could not be retrieved bcs there is no such file");
 				}
 				outToServer.writeBytes(command + "\0");
-			}			
+			}
+			else if (cmd.equalsIgnoreCase("user")) {
+				outToServer.writeBytes(command + "\0");
+				String[] parts = command.split("\\ ",2);
+				currentUser = parts[1];				
+				userFolder = FileSystems.getDefault().getPath(currentUser).toFile().getAbsoluteFile();
+			}
 			else {
 				outToServer.writeBytes(command + "\0");
 			}
@@ -180,7 +199,7 @@ class clientTCP {
 	}		
 
 	/** 
-	*	descripton	: 	receiveFile() receives file from the server byte by byte and saves it to the currentDirectory
+	*	descripton	: 	receiveFile() receives file from the server byte by byte and saves it to the currentUser's folder
 	*					when the RETR command is sent
 	*	args		: 	NONE
 	*	returns		:	NONE
@@ -202,11 +221,11 @@ class clientTCP {
     { 
 		//create new instance of TCPServer
 		clientTCP server = new clientTCP();		
-		server.attemptConnection();
-		
-		while(true) {
-			server.checkValidCommand();
-			server.processServerResponse();
+		if (server.attemptConnection()) {	
+			while(true) {
+				server.checkValidCommand();
+				server.processServerResponse();
+			}
 		}
     } 
 } 
