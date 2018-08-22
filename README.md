@@ -15,7 +15,7 @@ Computer Networks and Distributed Applications
 5. Run ```java clientTCP```
 
 #### Logging in
-There are 4 accounts stored in the assignment1/server/userList.txt
+There are 4 accounts stored in the assignment1/server/res/userList.txt
 ```
 username: aA
 account: bB
