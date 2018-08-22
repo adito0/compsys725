@@ -54,17 +54,17 @@ Available directories are ```assignment1/client/<username>``` (i.e assignment1/c
 
 #### ```USER <username>```<br>
 Checks whether username exists in the server records. Grants immediate log in for User admin.
-- If user is admin
+- If user is admin:
 ```
 $ USER admin
 from server: !admin logged in
 ```
-- If username provided is in the server's userList
+- If username provided is in the server's userList:
 ```
 $ USER upi123
 from server: +user id valid, send account and password
 ```
-- If username provided is not in the server's userList
+- If username provided is not in the server's userList:
 ```
 $ USER upi000
 from server: -invalid user id, try again
@@ -77,12 +77,12 @@ Checks if the account corresponds to the provided username (for non-admin users)
 $ ACCT upi123
 from server: +account valid, send password
 ```
-- If account provided corresponds to the username provided and have password have been provided
+- If account provided corresponds to the username provided and have password have been provided:
 ```
 $ ACCT upi123
 from server: !account ok. skip the password
 ```
-- If account provided does not correspond to the username provided
+- If account provided does not correspond to the username provided:
 ```
 $ ACCT upi000
 from server: -invalid account, try again
@@ -90,17 +90,17 @@ from server: -invalid account, try again
 #### ```PASS <password>```<br>
 Checks if the password corresponds to the provided account (for non-admin users). Password can also be provided before providing the account.
 
-- If password corresponds to the username and the user has provided account
+- If password corresponds to the username and the user has provided account:
 ```
 $ PASS upi123
 from server: !logged in
 ```
-- If password corresponds to the username but the user has yet to provide the account
+- If password corresponds to the username but the user has yet to provide the account:
 ```
 $ PASS upi123
 from server: +send account
 ```
-- If password does not correspond to the username provided
+- If password does not correspond to the username provided:
 ```
 $ PASS upi000
 from server: -wrong password, try again
@@ -176,7 +176,7 @@ p1.jpg                         21/08/2018 07:04         186623              syam
 p0.jpg                         21/08/2018 16:56         478525              syamira 
 p2.jpg                         21/08/2018 16:47         628817              syamira 
 ```
-- If user did not specify a valid/any listing format
+- If user did not specify a valid/any listing format:
 ```
 $ LIST g
 from server: -invalid file listing format
@@ -189,13 +189,11 @@ Changes the current working directory to the specified <new-directory>. If user 
 ```
 $ CDIR a
 from server: !changed working directory to ~/a
-
 ```
 - If user is not logged in:
 ```
 $ CDIR a
 from server: -you are not logged in. please do so
-
 ```
 - If directory is invalid:
 ```
@@ -210,22 +208,20 @@ Deletes the specified <filename> in the current directory if the file exists and
 ```
 $ KILL t1.txt
 from server: +t1.txt deleted
-
 ```
 - If file cannot be deleted because it doesn't exist:
 ```
 $ KILL tp.txt
 from server: -no such file exist in the directory
-
 ```
 - If file cannot be deleted because it is protected/a subdirectory:
 ```
 $ KILL a
 from server: -file is protected
-
 ```
 #### ```NAME <filename>```<br>
 Renames specified <filename> if it exists in the current directory. If server sends a '+', user needs to reply with a TOBE <filename>. Requires user to be logged in.
+
 - If file exists:	
 ```
 $ NAME t5.txt
@@ -243,7 +239,6 @@ Provides the server with the <filename> following the NAME command. Should only 
 ```
 $ TOBE t1.txt
 from server: +t5.txt renamed to t1.txt
-
 ```
 
 #### ```DONE```
@@ -261,19 +256,16 @@ Retrieves the specified <filename> from the server if the file fits in the clien
 ```
 $ RETR cat.jpg
 from server: 628817
-
 ```
 - If user tries to retrieve a file that is not on the server's current directory
 ```
 $ RETR caat.jpg
 from server: -file doesn't exist
-
 ```
 Client needs to send a SEND command to proceed with file transfer. The client will be asked (by the client side, not server) to enter a filename for the incoming file.
 ```
 $ SEND
 save file as: 
-
 ```
 ```
 $ cat.jpg 
@@ -298,7 +290,6 @@ The client will be asked (by the client side, not server) to enter the filename 
 ```
 $ STOR NEW cat.jpg
 enter filename to be sent to the server: 
-
 ```
 The client will print the file size to the console and it can be used for the following the SEND command
 sent to the server
@@ -306,12 +297,10 @@ sent to the server
 $ cat.jpg
 filesize : 628817
 from server: +file does not exist, will create new file
-
 ```
 The server returns the status of the file
 ```
 $ SIZE 628817
 from server: +ok, waiting for file
 from server: +saved cat.jpg to server's current directory
-
 ```
